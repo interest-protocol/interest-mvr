@@ -71,8 +71,8 @@ public fun calc_up(bps: BPS, total: u64): u64 {
 
 // === Public View Functions ===
 
-public fun max_bps(): u64 {
-    MAX_BPS
+public macro fun max_value(): u64 {
+    10_000
 }
 
 public fun value(bps: BPS): u64 {

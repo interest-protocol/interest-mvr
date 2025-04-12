@@ -1,8 +1,0 @@
-{
-    "tabWidth": 4,
-    "printWidth": 100,
-    "useModuleLabel": true,
-    "enableErrorDebug": false,
-    "autoGroupImports": "package",
-    "wrapComments": false
-}
