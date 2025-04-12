@@ -1,8 +1,8 @@
 [package]
-name = "InterestBPS"
-edition = "2024.beta" 
-license = "MIT"           
-authors = ["Jose Cerqueira (jose@interestprotocol.com)"]  
+name = "Interest BPS"
+edition = "2024.beta"
+license = "Apache-2.0"            
+authors = ["Jose Cerqueira (jose@interestprotocol.com)"]    
 
 [dependencies]
 

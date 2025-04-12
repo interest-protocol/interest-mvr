@@ -5,9 +5,9 @@
 /// The SuperAdmin object has the ability to add and remove admins from the contract.
 /// Admins can create a Witness to execute authorized transactions.
 /// Author: Jose Cerqueira
-module access_control::access_control;
+module interest_access_control::access_control;
 
-use access_control::events;
+use interest_access_control::events;
 use sui::{types, vec_set::{Self, VecSet}};
 
 // === Imports ===

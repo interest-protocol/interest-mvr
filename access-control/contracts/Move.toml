@@ -1,5 +1,5 @@
 [package]
-name = "AccessControl"
+name = "Interest Access Control"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 license = "Apache-2.0"            
 authors = ["Jose Cerqueira (jose@interestprotocol.com)"]     
@@ -7,5 +7,5 @@ authors = ["Jose Cerqueira (jose@interestprotocol.com)"]
 [dependencies]
 
 [addresses]
-access_control = "0x0"
+interest_access_control = "0x0"
 
