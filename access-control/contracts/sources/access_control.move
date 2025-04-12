@@ -1,8 +1,8 @@
 // Copyright (c) DEFI, LDA
 // SPDX-License-Identifier: Apache-2.0
 
-/// This module provides a safe access control mechanism for the contract.
-/// The SuperAdmin object has the ability to add and remove admins from the contract.
+/// This module provides a safe access control mechanism for contracts.
+/// The SuperAdmin object has the ability to add and remove admins from the contract and manage roles.
 /// Admins can create a Witness to execute authorized transactions.
 /// Author: Jose Cerqueira
 module interest_access_control::access_control;
@@ -96,25 +96,11 @@ public fun revoke<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, to_revoke: addre
     events::revoke_admin<T>(to_revoke);
 }
 
-public fun is_admin<T: drop>(acl: &ACL<T>, admin: address): bool {
-    acl.admins.contains(&admin)
-}
-
-public fun has_role<T: drop>(acl: &ACL<T>, admin: address, role: u8): bool {
-    if (role > 128) return false;
-
-    check_role(acl.admins[&admin], role)
-}
-
 public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
     let admin_address = admin.id.to_address();
     assert!(acl.admins.contains(&admin_address), interest_access_control::errors::invalid_admin!());
 
     AdminWitness(acl.admins[&admin_address])
-}
-
-public fun assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8) {
-    assert!(check_role(witness.0, role), interest_access_control::errors::invalid_permissions!());
 }
 
 public fun destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>) {
@@ -171,12 +157,30 @@ public fun destroy_super_admin<T: drop>(super_admin: SuperAdmin<T>) {
 
 // === Public View Functions ===
 
-public fun permissions<T: drop>(acl: &ACL<T>, admin: address): u128 {
-    acl.admins[&admin]
-}
-
 public fun admin_address<T: drop>(admin: &Admin<T>): address {
     admin.id.to_address()
+}
+
+public fun is_admin<T: drop>(acl: &ACL<T>, admin: address): bool {
+    acl.admins.contains(&admin)
+}
+
+public fun has_role<T: drop>(acl: &ACL<T>, admin: address, role: u8): bool {
+    if (role > 128 || !acl.admins.contains(&admin)) return false;
+
+    check_role(acl.admins[&admin], role)
+}
+
+public fun permissions<T: drop>(acl: &ACL<T>, admin: address): Option<u128> {
+    if (!acl.admins.contains(&admin)) return option::none();
+
+    option::some(acl.admins[&admin])
+}
+
+// === Assertions ===
+
+public fun assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8) {
+    assert!(check_role(witness.0, role), interest_access_control::errors::invalid_permissions!());
 }
 
 // === Private Functions ===
