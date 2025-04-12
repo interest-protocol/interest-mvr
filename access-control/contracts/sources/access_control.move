@@ -114,7 +114,7 @@ public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
 }
 
 public fun assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8) {
-    assert!(check_role(witness.0, role), interest_access_control::errors::invalid_role!());
+    assert!(check_role(witness.0, role), interest_access_control::errors::invalid_permissions!());
 }
 
 public fun destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>) {

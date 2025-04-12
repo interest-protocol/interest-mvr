@@ -26,3 +26,7 @@ public(package) macro fun invalid_super_admin(): u64 {
 public(package) macro fun invalid_role(): u64 {
     4
 }
+
+public(package) macro fun invalid_permissions(): u64 {
+    5
+}
