@@ -22,3 +22,7 @@ public(package) macro fun invalid_admin(): u64 {
 public(package) macro fun invalid_super_admin(): u64 {
     3
 }
+
+public(package) macro fun invalid_role(): u64 {
+    4
+}

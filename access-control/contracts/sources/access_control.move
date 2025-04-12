@@ -8,23 +8,17 @@
 module interest_access_control::access_control;
 
 use interest_access_control::events;
-use sui::{types, vec_set::{Self, VecSet}};
-
-// === Imports ===
-
-// === Constants ===
-
-/// Each epoch is roughly 1 day
-const THREE_EPOCHS: u64 = 3;
+use sui::{types, vec_map::{Self, VecMap}};
 
 // === Structs ===
 
-public struct AdminWitness<phantom T>() has drop;
+public struct AdminWitness<phantom T>(u128) has drop;
 
 public struct SuperAdmin<phantom T> has key {
     id: UID,
     new_admin: address,
     start: u64,
+    delay: u64,
 }
 
 public struct Admin<phantom T> has key, store {
@@ -33,24 +27,30 @@ public struct Admin<phantom T> has key, store {
 
 public struct ACL<phantom T> has key, store {
     id: UID,
-    admins: VecSet<address>,
+    admins: VecMap<address, u128>,
 }
 
 // === Public Mutative Functions ===
 
-public fun new<T: drop>(otw: T, super_admin_recipient: address, ctx: &mut TxContext): ACL<T> {
-    assert!(types::is_one_time_witness(&otw), interest_access_control::errors::invalid_otw!());
+public fun new<T: drop>(
+    otw: &T,
+    delay: u64,
+    super_admin_recipient: address,
+    ctx: &mut TxContext,
+): ACL<T> {
+    assert!(types::is_one_time_witness(otw), interest_access_control::errors::invalid_otw!());
     assert!(super_admin_recipient != @0x0, interest_access_control::errors::invalid_super_admin!());
 
     let acl = ACL<T> {
         id: object::new(ctx),
-        admins: vec_set::empty(),
+        admins: vec_map::empty(),
     };
 
     let super_admin = SuperAdmin<T> {
         id: object::new(ctx),
         new_admin: @0x0,
         start: std::u64::max_value!(),
+        delay,
     };
 
     transfer::transfer(super_admin, super_admin_recipient);
@@ -58,16 +58,36 @@ public fun new<T: drop>(otw: T, super_admin_recipient: address, ctx: &mut TxCont
     acl
 }
 
+public fun default<T: drop>(otw: &T, ctx: &mut TxContext): ACL<T> {
+    new(otw, 3, ctx.sender(), ctx)
+}
+
 public fun new_admin<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, ctx: &mut TxContext): Admin<T> {
     let admin = Admin {
         id: object::new(ctx),
     };
 
-    acl.admins.insert(admin.id.to_address());
+    acl.admins.insert(admin.id.to_address(), 0);
 
     events::new_admin<T>(admin.id.to_address());
 
     admin
+}
+
+public fun add_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address, role: u8) {
+    assert!(128 > role, interest_access_control::errors::invalid_role!());
+    assert!(acl.is_admin(admin), interest_access_control::errors::invalid_admin!());
+
+    let permissions = &mut acl.admins[&admin];
+    *permissions = *permissions | (1 << role);
+}
+
+public fun remove_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address, role: u8) {
+    assert!(128 > role, interest_access_control::errors::invalid_role!());
+    assert!(acl.is_admin(admin), interest_access_control::errors::invalid_admin!());
+
+    let permissions = &mut acl.admins[&admin];
+    *permissions = *permissions - (1 << role);
 }
 
 public fun revoke<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, to_revoke: address) {
@@ -80,10 +100,21 @@ public fun is_admin<T: drop>(acl: &ACL<T>, admin: address): bool {
     acl.admins.contains(&admin)
 }
 
-public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
-    assert!(acl.is_admin(admin.id.to_address()), interest_access_control::errors::invalid_admin!());
+public fun has_role<T: drop>(acl: &ACL<T>, admin: address, role: u8): bool {
+    if (role > 128) return false;
 
-    AdminWitness()
+    check_role(acl.admins[&admin], role)
+}
+
+public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
+    let admin_address = admin.id.to_address();
+    assert!(acl.admins.contains(&admin_address), interest_access_control::errors::invalid_admin!());
+
+    AdminWitness(acl.admins[&admin_address])
+}
+
+public fun assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8) {
+    assert!(check_role(witness.0, role), interest_access_control::errors::invalid_role!());
 }
 
 public fun destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>) {
@@ -91,7 +122,9 @@ public fun destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>) {
 
     let admin_address = id.to_address();
 
-    if (acl.admins.contains(&admin_address)) acl.admins.remove(&admin_address);
+    if (acl.admins.contains(&admin_address)) {
+        acl.admins.remove(&admin_address);
+    };
 
     id.delete();
 }
@@ -117,7 +150,7 @@ public fun start_transfer<T: drop>(
 
 public fun finish_transfer<T: drop>(mut super_admin: SuperAdmin<T>, ctx: &mut TxContext) {
     assert!(
-        ctx.epoch() > super_admin.start + THREE_EPOCHS,
+        ctx.epoch() > super_admin.start + super_admin.delay,
         interest_access_control::errors::invalid_epoch!(),
     );
 
@@ -136,19 +169,37 @@ public fun destroy_super_admin<T: drop>(super_admin: SuperAdmin<T>) {
     id.delete();
 }
 
+// === Public View Functions ===
+
+public fun permissions<T: drop>(acl: &ACL<T>, admin: address): u128 {
+    acl.admins[&admin]
+}
+
+public fun admin_address<T: drop>(admin: &Admin<T>): address {
+    admin.id.to_address()
+}
+
+// === Private Functions ===
+
+fun check_role(permissions: u128, role: u8): bool {
+    if (role > 128) return false;
+    (permissions & (1 << role)) != 0
+}
+
 // === Aliases ===
 
+public use fun admin_address as Admin.address;
 public use fun destroy_super_admin as SuperAdmin.destroy;
 
 // === Test Functions ===
 
 #[test_only]
-public fun sign_in_for_testing<T: drop>(): AdminWitness<T> {
-    AdminWitness()
+public fun sign_in_for_testing<T: drop>(permissions: u128): AdminWitness<T> {
+    AdminWitness(permissions)
 }
 
 #[test_only]
-public fun admins<T: drop>(acl: &ACL<T>): &VecSet<address> {
+public fun admins<T: drop>(acl: &ACL<T>): &VecMap<address, u128> {
     &acl.admins
 }
 
@@ -160,9 +211,4 @@ public fun super_admin_new_admin<T: drop>(super_admin: &SuperAdmin<T>): address 
 #[test_only]
 public fun super_admin_start<T: drop>(super_admin: &SuperAdmin<T>): u64 {
     super_admin.start
-}
-
-#[test_only]
-public fun admin_address<T: drop>(admin: &Admin<T>): address {
-    admin.id.to_address()
 }
