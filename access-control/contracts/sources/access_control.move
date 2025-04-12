@@ -53,6 +53,13 @@ public fun new<T: drop>(
         delay,
     };
 
+    events::new_super_admin<T>(
+        acl.id.to_address(),
+        super_admin.id.to_address(),
+        super_admin_recipient,
+        delay,
+    );
+
     transfer::transfer(super_admin, super_admin_recipient);
 
     acl
@@ -78,6 +85,8 @@ public fun add_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address
     assert!(128 > role, interest_access_control::errors::invalid_role!());
     assert!(acl.is_admin(admin), interest_access_control::errors::invalid_admin!());
 
+    events::role_added<T>(admin, role);
+
     let permissions = &mut acl.admins[&admin];
     *permissions = *permissions | (1 << role);
 }
@@ -85,6 +94,8 @@ public fun add_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address
 public fun remove_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address, role: u8) {
     assert!(128 > role, interest_access_control::errors::invalid_role!());
     assert!(acl.is_admin(admin), interest_access_control::errors::invalid_admin!());
+
+    events::role_removed<T>(admin, role);
 
     let permissions = &mut acl.admins[&admin];
     *permissions = *permissions - (1 << role);
@@ -98,7 +109,7 @@ public fun revoke<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, to_revoke: addre
 
 public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
     let admin_address = admin.id.to_address();
-    assert!(acl.admins.contains(&admin_address), interest_access_control::errors::invalid_admin!());
+    assert!(acl.is_admin(admin_address), interest_access_control::errors::invalid_admin!());
 
     AdminWitness(acl.admins[&admin_address])
 }
@@ -111,6 +122,8 @@ public fun destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>) {
     if (acl.admins.contains(&admin_address)) {
         acl.admins.remove(&admin_address);
     };
+
+    events::admin_destroyed<T>(admin_address);
 
     id.delete();
 }
@@ -152,6 +165,9 @@ public fun finish_transfer<T: drop>(mut super_admin: SuperAdmin<T>, ctx: &mut Tx
 /// This is irreversible, the contract does not offer a way to create a new super admin
 public fun destroy_super_admin<T: drop>(super_admin: SuperAdmin<T>) {
     let SuperAdmin { id, .. } = super_admin;
+
+    events::super_admin_destroyed<T>(id.to_address());
+
     id.delete();
 }
 
@@ -166,13 +182,13 @@ public fun is_admin<T: drop>(acl: &ACL<T>, admin: address): bool {
 }
 
 public fun has_role<T: drop>(acl: &ACL<T>, admin: address, role: u8): bool {
-    if (role > 128 || !acl.admins.contains(&admin)) return false;
+    if (!acl.is_admin(admin) || role > 128) return false;
 
     check_role(acl.admins[&admin], role)
 }
 
 public fun permissions<T: drop>(acl: &ACL<T>, admin: address): Option<u128> {
-    if (!acl.admins.contains(&admin)) return option::none();
+    if (!acl.is_admin(admin)) return option::none();
 
     option::some(acl.admins[&admin])
 }
