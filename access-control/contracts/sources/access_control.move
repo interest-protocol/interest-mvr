@@ -39,8 +39,8 @@ public struct ACL<phantom T> has key, store {
 // === Public Mutative Functions ===
 
 public fun new<T: drop>(otw: T, super_admin_recipient: address, ctx: &mut TxContext): ACL<T> {
-    assert!(types::is_one_time_witness(&otw), access_control::errors::invalid_otw!());
-    assert!(super_admin_recipient != @0x0, access_control::errors::invalid_super_admin!());
+    assert!(types::is_one_time_witness(&otw), interest_access_control::errors::invalid_otw!());
+    assert!(super_admin_recipient != @0x0, interest_access_control::errors::invalid_super_admin!());
 
     let acl = ACL<T> {
         id: object::new(ctx),
@@ -81,7 +81,7 @@ public fun is_admin<T: drop>(acl: &ACL<T>, admin: address): bool {
 }
 
 public fun sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T> {
-    assert!(acl.is_admin(admin.id.to_address()), access_control::errors::invalid_admin!());
+    assert!(acl.is_admin(admin.id.to_address()), interest_access_control::errors::invalid_admin!());
 
     AdminWitness()
 }
@@ -106,7 +106,7 @@ public fun start_transfer<T: drop>(
 ) {
     assert!(
         new_super_admin != @0x0 && new_super_admin != ctx.sender(),
-        access_control::errors::invalid_super_admin!(),
+        interest_access_control::errors::invalid_super_admin!(),
     );
 
     super_admin.start = ctx.epoch();
@@ -118,7 +118,7 @@ public fun start_transfer<T: drop>(
 public fun finish_transfer<T: drop>(mut super_admin: SuperAdmin<T>, ctx: &mut TxContext) {
     assert!(
         ctx.epoch() > super_admin.start + THREE_EPOCHS,
-        access_control::errors::invalid_epoch!(),
+        interest_access_control::errors::invalid_epoch!(),
     );
 
     let new_admin = super_admin.new_admin;
