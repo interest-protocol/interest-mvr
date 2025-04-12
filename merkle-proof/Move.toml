@@ -1,0 +1,11 @@
+[package]
+name = "Interest Merkle Proof"
+edition = "2024.beta"
+license = "Apache-2.0"            
+authors = ["Jose Cerqueira (jose@interestprotocol.com)"]    
+
+[dependencies]
+
+[addresses]
+interest_merkle_proof = "0x0"
+

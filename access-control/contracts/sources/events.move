@@ -3,7 +3,7 @@
 
 /// This module provides events for the access control contract.
 /// Author: Jose Cerqueira
-module access_control::events;
+module interest_access_control::events;
 
 use sui::event::emit;
 

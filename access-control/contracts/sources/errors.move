@@ -3,7 +3,7 @@
 
 /// This module provides errors for the access control contract.
 /// Author: Jose Cerqueira
-module access_control::errors;
+module interest_access_control::errors;
 
 // === Errors ===
 
