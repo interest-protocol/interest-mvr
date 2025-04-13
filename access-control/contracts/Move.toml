@@ -7,5 +7,5 @@ authors = ["Jose Cerqueira (jose@interestprotocol.com)"]
 [dependencies]
 
 [addresses]
-interest_access_control = "0x1"
+interest_access_control = "0x0"
 
