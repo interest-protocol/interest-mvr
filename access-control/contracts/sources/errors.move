@@ -5,6 +5,24 @@
 /// Author: Jose Cerqueira
 module interest_access_control::errors;
 
+#[test_only]
+const EInvalidOTW: u64 = 0;
+
+#[test_only]
+const EInvalidEpoch: u64 = 1;
+
+#[test_only]
+const EInvalidAdmin: u64 = 2;
+
+#[test_only]
+const EInvalidSuperAdmin: u64 = 3;
+
+#[test_only]
+const EInvalidRole: u64 = 4;
+
+#[test_only]
+const EInvalidPermissions: u64 = 5;
+
 // === Errors ===
 
 public(package) macro fun invalid_otw(): u64 {

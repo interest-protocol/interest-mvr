@@ -39,30 +39,8 @@ public fun new<T: drop>(
     ctx: &mut TxContext,
 ): ACL<T> {
     assert!(types::is_one_time_witness(otw), interest_access_control::errors::invalid_otw!());
-    assert!(super_admin_recipient != @0x0, interest_access_control::errors::invalid_super_admin!());
 
-    let acl = ACL<T> {
-        id: object::new(ctx),
-        admins: vec_map::empty(),
-    };
-
-    let super_admin = SuperAdmin<T> {
-        id: object::new(ctx),
-        new_admin: @0x0,
-        start: std::u64::max_value!(),
-        delay,
-    };
-
-    events::new_super_admin<T>(
-        acl.id.to_address(),
-        super_admin.id.to_address(),
-        super_admin_recipient,
-        delay,
-    );
-
-    transfer::transfer(super_admin, super_admin_recipient);
-
-    acl
+    new_impl(delay, super_admin_recipient, ctx)
 }
 
 public fun default<T: drop>(otw: &T, ctx: &mut TxContext): ACL<T> {
@@ -206,12 +184,44 @@ fun check_role(permissions: u128, role: u8): bool {
     (permissions & (1 << role)) != 0
 }
 
+fun new_impl<T: drop>(delay: u64, super_admin_recipient: address, ctx: &mut TxContext): ACL<T> {
+    assert!(super_admin_recipient != @0x0, interest_access_control::errors::invalid_super_admin!());
+
+    let acl = ACL<T> {
+        id: object::new(ctx),
+        admins: vec_map::empty(),
+    };
+
+    let super_admin = SuperAdmin<T> {
+        id: object::new(ctx),
+        new_admin: @0x0,
+        start: std::u64::max_value!(),
+        delay,
+    };
+
+    events::new_super_admin<T>(
+        acl.id.to_address(),
+        super_admin.id.to_address(),
+        super_admin_recipient,
+        delay,
+    );
+
+    transfer::transfer(super_admin, super_admin_recipient);
+
+    acl
+}
+
 // === Aliases ===
 
 public use fun admin_address as Admin.address;
 public use fun destroy_super_admin as SuperAdmin.destroy;
 
 // === Test Functions ===
+
+#[test_only]
+public fun new_for_testing<T: drop>(delay: u64, super_admin_recipient: address, ctx: &mut TxContext): ACL<T> {
+    new_impl(delay, super_admin_recipient, ctx)
+}
 
 #[test_only]
 public fun sign_in_for_testing<T: drop>(permissions: u128): AdminWitness<T> {
@@ -231,4 +241,14 @@ public fun super_admin_new_admin<T: drop>(super_admin: &SuperAdmin<T>): address 
 #[test_only]
 public fun super_admin_start<T: drop>(super_admin: &SuperAdmin<T>): u64 {
     super_admin.start
+}
+
+#[test_only]
+public fun delay<T: drop>(super_admin: &SuperAdmin<T>): u64 {
+    super_admin.delay
+}
+
+#[test_only]
+public fun witness_permissions<T: drop>(witness: &AdminWitness<T>): u128 {
+    witness.0
 }
