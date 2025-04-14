@@ -63,12 +63,25 @@ In your code, import and use the package as:
 ```move
 module my::awesome_project;
 
-use interest_access_control::access_control;
+use interest_access_control::access_control::{Self, AdminWitness};
+
+const MINT_ROLE: u8 = 0;
 
 public struct AWESOME_PROJECT() has drop;
 
 fun init(otw: AWESOME_PROJECT, ctx: &mut TxContext) {
     let acl = access_control::default<TestWitness>(&otw, ctx);
+}
+
+/// Admin only Function
+public fun only_admin(admin_witness: &AdminWitness<AWESOME_PROJECT>) {
+    /// ... admin ops
+}
+
+/// Admin only Function With Mint Role
+public fun only_mint_admin(admin_witness: &AdminWitness<AWESOME_PROJECT>) {
+    admin_witness.assert_has_role(MINT_ROLE);
+    /// ... admin ops
 }
 ```
 
@@ -151,7 +164,7 @@ public fun start_transfer<T: drop>(
 public  fun  finish_transfer<T: drop>(mut super_admin: SuperAdmin<T>, ctx: &mut TxContext)
 ```
 
-**assert_role:** It asserts that an `AdminWitness` has a `role`.
+**assert_has_role:** It asserts that an `AdminWitness` has a `role`.
 
 ```move
 public  fun  assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8)
