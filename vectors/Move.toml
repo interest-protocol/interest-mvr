@@ -1,0 +1,10 @@
+[package]
+name = "InterestVectors"
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+license = "Apache-2.0"            
+authors = ["Jose Cerqueira (jose@interestprotocol.com)"]   
+
+[dependencies]
+
+[addresses]
+interest_vectors = "0x0"
