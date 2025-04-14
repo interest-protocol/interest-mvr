@@ -70,7 +70,7 @@ const MINT_ROLE: u8 = 0;
 public struct AWESOME_PROJECT() has drop;
 
 fun init(otw: AWESOME_PROJECT, ctx: &mut TxContext) {
-    let acl = access_control::default<TestWitness>(&otw, ctx);
+    let acl = access_control::default<AWESOME_PROJECT>(&otw, ctx);
 }
 
 /// Admin only Function
