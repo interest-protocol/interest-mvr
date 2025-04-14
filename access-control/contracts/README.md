@@ -10,16 +10,16 @@ The package resolves around three objects:
 -   **SuperAdmin:** It is a key only object with the capability to create and add/remove admins from the `ACL` object.
 -   **Admin:** It is an object that can issue an AdminWitness used to gate admin functions. Admins can have roles.
 
-`SuperAdmin` has the highest authority in the system as it should be kept safe under a multisig or under a `DAO` if possible. Admins issue a [Witness](https://move-book.com/programmability/witness-pattern.html?highlight=witness#pattern-witness) to prove their capability rights.
+`SuperAdmin` has the highest authority in the system, it should be kept safe under a multisig or under a `DAO` if possible. Admins issue a [Witness](https://move-book.com/programmability/witness-pattern.html?highlight=witness#pattern-witness) to prove their capability rights.
 
 The `SuperAdmin` is a key only object that can only be transferred via a two-step function with a delay in between to allow users to adjust before ownership is transferred.
 
-Functions can be admin gated by accepting a reference of the witness in their arguments.
+Functions can be admin gated by accepting a reference of an `AdminWitness` in their arguments.
 
 ## Modules
 
 -   access_control: It has the core logic of the package.
--   errors: It has all the error codes issued by the package.
+-   errors: It has all the error codes thrown by the package.
 -   events: it has all the event structs.
 -   access_control_tests: It has unit tests for the access_control module.
 
@@ -37,8 +37,7 @@ mvr add @interest/acl --network mainnet
 
 ### Manual
 
-To add this library to your project, add this to your `Move.toml` file under
-`[dependencies]` section:
+To add this library to your project, add this to your `Move.toml`.
 
 ```toml
 # goes into [dependencies] section
@@ -51,7 +50,7 @@ network = "mainnet"
 
 ### Package Ids
 
-Access control is an immutable package for security reasons. The UpgradeCap has been deleted in this [transaction](https://suiscan.xyz/mainnet/tx/J3f3TcYTi41jAYwo2cvVAHgqpRYxdetZXqvAUv18fixq).
+Access control is an **immutable package** for security reasons. The UpgradeCap has been deleted in this [transaction](https://suiscan.xyz/mainnet/tx/J3f3TcYTi41jAYwo2cvVAHgqpRYxdetZXqvAUv18fixq).
 
 It is deployed on Sui Network mainnet at: [0xb877fe150db8e9af55c399b4e49ba8afe658bd05317cb378c940344851125e9a](https://suiscan.xyz/mainnet/object/0xb877fe150db8e9af55c399b4e49ba8afe658bd05317cb378c940344851125e9a/tx-blocks)
 
@@ -68,12 +67,12 @@ use interest_access_control::access_control;
 
 public struct AWESOME_PROJECT() has drop;
 
-fun do(otw: AWESOME_PROJECT, ctx: &mut TxContext) {
+fun init(otw: AWESOME_PROJECT, ctx: &mut TxContext) {
     let acl = access_control::default<TestWitness>(&otw, ctx);
 }
 ```
 
-ACL objects require a One Time Witness for security reasons. You can read more about OTWs [here](https://move-book.com/programmability/witness-pattern.html?highlight=one%20time#one-time-witness).
+ACL objects require a `One Time Witness` for security reasons. You can read more about OTWs [here](https://move-book.com/programmability/witness-pattern.html?highlight=one%20time#one-time-witness).
 
 ## API Reference
 
@@ -112,31 +111,31 @@ public  fun  add_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: addre
 public  fun  remove_role<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, admin: address, role: u8)
 ```
 
-**revoke** It allows the `SuperAdmin` to remove a an `Admin`. This operation removes an `Admin` from the `ACL` shared object. It will prevent the removed `Admin` from issuing an `AdminWitness`.
+**revoke:** It allows the `SuperAdmin` to remove a an `Admin`. This operation removes an `Admin` from the `ACL` shared object. It will prevent the removed `Admin` from issuing an `AdminWitness`.
 
 ```move
 public  fun  revoke<T: drop>(acl: &mut ACL<T>, _: &SuperAdmin<T>, to_revoke: address)
 ```
 
-**sign_in** It allows an `Admin` to prove its access rights by issuing an `AdminWitness` with its roles.
+**sign_in:** It allows an `Admin` to prove its access rights by issuing an `AdminWitness` with its roles.
 
 ```move
 public  fun  sign_in<T: drop>(acl: &ACL<T>, admin: &Admin<T>): AdminWitness<T>
 ```
 
-**destroy_admin** It allows an `Admin` to revoke its rights and delete the object for a Sui rebate.
+**destroy_admin:** It allows an `Admin` to revoke its rights and delete the object for a Sui rebate.
 
 ```move
 public  fun  destroy_admin<T: drop>(acl: &mut ACL<T>, admin: Admin<T>)
 ```
 
-**destroy_super_admin** It allows a `SuperAdmin` to revoke its rights and delete the object for a Sui rebate. **Please note, this is irreversible.**
+**destroy_super_admin:** It allows a `SuperAdmin` to revoke its rights and delete the object for a Sui rebate. **Please note, this is irreversible.**
 
 ```move
 public  fun  destroy_super_admin<T: drop>(super_admin: SuperAdmin<T>)
 ```
 
-**start_transfer** It initiates the SuperAdmin transfer process.
+**start_transfer:** It initiates the SuperAdmin transfer process.
 
 ```move
 public fun start_transfer<T: drop>(
@@ -146,37 +145,37 @@ public fun start_transfer<T: drop>(
 )
 ```
 
-**finish_transfer** It transfer the `SuperAdmin` to the recipient set at `start_transfer`. It can only be called after the `delay` period.
+**finish_transfer:** It transfers the `SuperAdmin` to the recipient set at `start_transfer`. It can only be called after the `delay` period.
 
 ```move
 public  fun  finish_transfer<T: drop>(mut super_admin: SuperAdmin<T>, ctx: &mut TxContext)
 ```
 
-**assert_role** It asserts that an `AdminWitness` has a `role`.
+**assert_role:** It asserts that an `AdminWitness` has a `role`.
 
 ```move
 public  fun  assert_has_role<T: drop>(witness: &AdminWitness<T>, role: u8)
 ```
 
-**admin_address** Returns the address of the `Admin`.
+**admin_address:** Returns the address of the `Admin`.
 
 ```move
 public  fun  admin_address<T: drop>(admin: &Admin<T>): address
 ```
 
-**is_admin** Checks if the address is an `Admin`.
+**is_admin:** Checks if the address is an `Admin`.
 
 ```move
 public  fun  is_admin<T: drop>(acl: &ACL<T>, admin: address): bool
 ```
 
-**has_role** Checks if the address is an `Admin` has the `role`.
+**has_role:** Checks if the address is an `Admin` has the `role`.
 
 ```move
 public  fun  has_role<T: drop>(acl: &ACL<T>, admin: address, role: u8): bool
 ```
 
-**permissions** Returns all the roles of an `Admin`. It is tracked via bit map.
+**permissions:** Returns all the roles of an `Admin`. It is tracked via bit map.
 
 ```move
 public  fun  permissions<T: drop>(acl: &ACL<T>, admin: address): Option<u128>
@@ -186,14 +185,14 @@ public  fun  permissions<T: drop>(acl: &ACL<T>, admin: address): Option<u128>
 
 Errors are encoded in u64 .
 
-| Error code | Reason                                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 0          | The new function was called without a `One Time Witness`. It is to make sure it can only be called in the init functions. |
-| 1          | `finish_transfer` was called before the delay has passed.                                                                 |
-| 2          | The `Admin` is not listed in the `ACL`.                                                                                   |
-| 3          | Caller tried to start the `SuperAdmin` transfer to the dead address or to himself/herself.                                |
-| 4          | The maximum allowed role is 127u8.                                                                                        |
-| 5          | The `Admin` does not have a specific role.                                                                                |
+| Error code | Reason                                                                                                                |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0          | The new function was called without a `One Time Witness`. It is to make sure it can only be called in init functions. |
+| 1          | `finish_transfer` was called before the delay has passed.                                                             |
+| 2          | The `Admin` is not listed in the `ACL`.                                                                               |
+| 3          | Caller tried to start the `SuperAdmin` transfer to the dead address or to himself/herself.                            |
+| 4          | The maximum allowed role is 127u8.                                                                                    |
+| 5          | The `Admin` does not have a specific role.                                                                            |
 
 ## Tags
 

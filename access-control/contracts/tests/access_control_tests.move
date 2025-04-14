@@ -445,7 +445,7 @@ macro fun tx(
 
 fun deploy(): Dapp {
     let mut scenario = ts::begin(ADMIN);
-    let acl = access_control::new_for_testing<TestWitness>(DELAY, ADMIN, scenario.ctx());
+    let acl = access_control::new<TestWitness>(&TestWitness(),DELAY, ADMIN, scenario.ctx());
 
     scenario.next_tx(ADMIN);
 
