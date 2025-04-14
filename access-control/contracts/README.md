@@ -198,7 +198,7 @@ Errors are encoded in u64 .
 
 ### testnet/acl-v1.0.1 - Adds testnet package
 
-Updates the Move.lock with testnet information.
+-   Updates the Move.lock with testnet information.
 
 ### mainnet/acl-v1.0.1 - Adds Move.lock
 
