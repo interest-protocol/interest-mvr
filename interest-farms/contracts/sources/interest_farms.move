@@ -217,7 +217,7 @@ public fun request_new_farm<Stake, Admin>(
     ctx: &mut TxContext,
 ): NewFarmRequest<Stake> {
     assert!(
-        start_timestamp > clock.timestamp_ms(),
+        start_timestamp >= clock.timestamp_ms(),
         interest_farms::interest_farm_errors::invalid_timestamp!(),
     );
 
@@ -515,3 +515,29 @@ public fun balance<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
         RewardBalance(type_name::get<Reward>()),
     ).value()
 }
+
+#[test_only]
+public fun assert_belongs_to_farm_for_test<Stake>(
+    account: &InterestFarmAccount<Stake>,
+    farm: &InterestFarm<Stake>,
+) {
+    account.assert_belongs_to_farm(farm);
+}
+
+#[test_only]
+public fun account_balance<Stake>(account: &InterestFarmAccount<Stake>): u64 {
+    account.balance.value()
+}
+
+#[test_only]
+public fun account_reward_debts<Stake, Reward>(account: &InterestFarmAccount<Stake>): u256 {
+    account.reward_debts[&type_name::get<Reward>()]
+}
+
+#[test_only]
+public fun account_rewards<Stake, Reward>(account: &InterestFarmAccount<Stake>): u64 {
+    account.rewards[&type_name::get<Reward>()]
+}
+
+
+
