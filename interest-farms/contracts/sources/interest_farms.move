@@ -212,7 +212,7 @@ public fun add_reward<Stake, Reward>(
 public fun request_new_farm<Stake, Admin>(
     clock: &Clock,
     coin_metadata: &CoinMetadata<Stake>,
-    _: AdminWitness<Admin>,
+    _: &AdminWitness<Admin>,
     start_timestamp: u64,
     ctx: &mut TxContext,
 ): NewFarmRequest<Stake> {
@@ -272,7 +272,7 @@ public fun new_farm<Stake>(
 public fun set_rewards_per_second<Stake, Reward, Admin>(
     farm: &mut InterestFarm<Stake>,
     clock: &Clock,
-    _: AdminWitness<Admin>,
+    _: &AdminWitness<Admin>,
     new_rewards_per_second: u64,
 ) {
     farm.assert_is_admin<_, Admin>();
@@ -290,13 +290,13 @@ public fun set_rewards_per_second<Stake, Reward, Admin>(
     );
 }
 
-public fun pause<Stake, Admin>(farm: &mut InterestFarm<Stake>, _: AdminWitness<Admin>) {
+public fun pause<Stake, Admin>(farm: &mut InterestFarm<Stake>, _: &AdminWitness<Admin>) {
     farm.assert_is_admin<_, Admin>();
 
     farm.paused = true;
 }
 
-public fun unpause<Stake, Admin>(farm: &mut InterestFarm<Stake>, _: AdminWitness<Admin>) {
+public fun unpause<Stake, Admin>(farm: &mut InterestFarm<Stake>, _: &AdminWitness<Admin>) {
     farm.assert_is_admin<_, Admin>();
 
     farm.paused = false;
@@ -368,7 +368,7 @@ fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, no
     let prev_reward_time_stamp = reward_data.last_reward_timestamp;
     reward_data.last_reward_timestamp = now;
 
-    if (farm.total_stake_amount != 0 || now > farm.start_timestamp) {
+    if (farm.total_stake_amount != 0 && now > farm.start_timestamp) {
         let (accrued_rewards_per_share, reward) = calculate_accrued_rewards(
             reward_data.rewards_per_second,
             reward_data.accrued_rewards_per_share,
@@ -468,3 +468,42 @@ fun balance_mut<T, Reward>(farm: &mut InterestFarm<T>, reward: TypeName): &mut B
 
 use fun timestamp_s as Clock.now;
 use fun update_farm as InterestFarm.update;
+
+// === Test Only Functions ===
+
+#[test_only]
+public fun rewards<Stake>(farm: &InterestFarm<Stake>): vector<TypeName> {
+    farm.rewards
+}
+
+#[test_only]
+public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u64, u256) {
+    let reward_data = farm.reward_data[&type_name::get<Reward>()];
+
+    (
+        reward_data.rewards,
+        reward_data.rewards_per_second,
+        reward_data.last_reward_timestamp,
+        reward_data.accrued_rewards_per_share,
+    )
+}
+
+#[test_only]
+public fun total_stake_amount<Stake>(farm: &InterestFarm<Stake>): u64 {
+    farm.total_stake_amount
+}
+
+#[test_only]
+public fun precision<Stake>(farm: &InterestFarm<Stake>): u256 {
+    farm.precision
+}
+
+#[test_only]
+public fun start_timestamp<Stake>(farm: &InterestFarm<Stake>): u64 {
+    farm.start_timestamp
+}
+
+#[test_only]
+public fun paused<Stake>(farm: &InterestFarm<Stake>): bool {
+    farm.paused
+}
