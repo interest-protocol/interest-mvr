@@ -1,10 +1,15 @@
 [package]
-name = "InterestVectors"
+name = "InterestFarms"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-license = "Apache-2.0"            
+license = "Apache-2.0"           
 authors = ["Jose Cerqueira (jose@interestprotocol.com)"]   
 
 [dependencies]
+interest_access_control = { r.mvr = "@interest/acl" }
+
 
 [addresses]
-interest_vectors = "0x0"
+interest_farms = "0x0"
+
+[r.mvr]
+network = "mainnet"
