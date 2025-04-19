@@ -507,3 +507,11 @@ public fun start_timestamp<Stake>(farm: &InterestFarm<Stake>): u64 {
 public fun paused<Stake>(farm: &InterestFarm<Stake>): bool {
     farm.paused
 }
+
+#[test_only]
+public fun balance<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
+    df::borrow<RewardBalance, Balance<Reward>>(
+        &farm.id,
+        RewardBalance(type_name::get<Reward>()),
+    ).value()
+}
