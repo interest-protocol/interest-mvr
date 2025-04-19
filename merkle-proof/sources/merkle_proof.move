@@ -6,15 +6,25 @@ const EVectorLengthMismatch: u64 = 0;
 
 // === Public Functions ===
 
-public fun verify(proof: vector<vector<u8>>, root: vector<u8>, leaf: vector<u8>): bool {
-    process_proof(proof, leaf) == root
+public macro fun verify(
+    $proof: vector<vector<u8>>,
+    $root: vector<u8>,
+    $leaf: vector<u8>,
+    $hash: |vector<u8>| -> vector<u8>,
+): bool {
+    process_proof!($proof, $leaf, $hash) == $root
 }
 
-public fun verify_with_index(
-    proof: &vector<vector<u8>>,
-    root: vector<u8>,
-    leaf: vector<u8>,
+public macro fun verify_with_index(
+    $proof: vector<vector<u8>>,
+    $root: vector<u8>,
+    $leaf: vector<u8>,
+    $hash: |vector<u8>| -> vector<u8>,
 ): (bool, u256) {
+    let proof = $proof;
+    let root = $root;
+    let leaf = $leaf;
+
     let mut computed_hash = leaf;
     let proof_length = proof.length();
     let mut i = 0;
@@ -25,10 +35,10 @@ public fun verify_with_index(
         let proof_element = proof[i];
 
         computed_hash = if (computed_hash.lt(proof_element))
-            efficient_hash(computed_hash, proof_element)
+            efficient_hash!(computed_hash, proof_element, $hash)
         else {
             j = j + 1;
-            efficient_hash(proof_element, computed_hash)
+            efficient_hash!(proof_element, computed_hash, $hash)
         };
 
         i = i + 1;
@@ -39,22 +49,28 @@ public fun verify_with_index(
 
 // === Private Functions ===
 
-fun process_proof(proof: vector<vector<u8>>, leaf: vector<u8>): vector<u8> {
+public macro fun process_proof($proof: vector<vector<u8>>, $leaf: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+    let proof = $proof;
+    let leaf = $leaf;
+
     proof.fold!(leaf, |computed_hash, proof_item| {
-        hash_pair(computed_hash, proof_item)
+        hash_pair!(computed_hash, proof_item, $hash)
     })
 }
 
-fun hash_pair(a: vector<u8>, b: vector<u8>): vector<u8> {
-    if (a.lt(b)) efficient_hash(a, b) else efficient_hash(b, a)
+public macro fun hash_pair($a: vector<u8>, $b: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+    let a = $a;
+    let b = $b;
+    if (a.lt(b)) efficient_hash!(a, b, $hash) else efficient_hash!(b, a, $hash)
 }
 
-fun efficient_hash(mut a: vector<u8>, b: vector<u8>): vector<u8> {
-    a.append(b);
-    a.sha3_256()
+public macro fun efficient_hash($a: vector<u8>, $b: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+    let mut a = $a;
+    a.append($b);
+    $hash(a)
 }
 
-fun lt(a: vector<u8>, b: vector<u8>): bool {
+public fun lt(a: vector<u8>, b: vector<u8>): bool {
     let mut i = 0;
     let len = a.length();
     assert!(len == b.length(), EVectorLengthMismatch);
@@ -71,4 +87,3 @@ fun lt(a: vector<u8>, b: vector<u8>): bool {
 // === Aliases ===
 
 use fun lt as vector.lt;
-use fun std::hash::sha3_256 as vector.sha3_256;
