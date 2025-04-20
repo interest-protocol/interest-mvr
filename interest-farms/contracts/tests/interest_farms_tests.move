@@ -50,7 +50,7 @@ fun test_new_farm() {
 
     dapp.add_default_farm(0);
 
-    dapp.tx!(|clock, admin_witness, ipx_metadata, scenario| {
+    dapp.env!(|clock, admin_witness, ipx_metadata, scenario| {
         let start_time = 100;
 
         let mut new_request_farm = interest_farm::request_new_farm<IPX, Test>(
@@ -113,7 +113,7 @@ fun test_new_account() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, _clock, _admin_witness, _ipx_metadata, scenario| {
+    dapp.farm_env!(|farm, _clock, _admin_witness, _ipx_metadata, scenario| {
         let account = farm.new_account<IPX>(scenario.ctx());
 
         account.assert_belongs_to_farm_for_test(farm);
@@ -139,7 +139,7 @@ fun test_new_account() {
 fun test_new_farm_invalid_start_timestamp() {
     let mut dapp = deploy();
 
-    dapp.tx!(|clock, _admin_witness, _ipx_metadata, _scenario| {
+    dapp.env!(|clock, _admin_witness, _ipx_metadata, _scenario| {
         clock.increase_seconds(1);
     });
 
@@ -160,7 +160,7 @@ fun test_new_account_farm_paused() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, _clock, admin_witness, _ipx_metadata, scenario| {
+    dapp.farm_env!(|farm, _clock, admin_witness, _ipx_metadata, scenario| {
         farm.pause<IPX, Test>(admin_witness);
 
         let account = farm.new_account<IPX>(scenario.ctx());
@@ -184,7 +184,7 @@ fun test_pause_and_unpause_farm() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, _clock, admin_witness, _ipx_metadata, _scenario| {
+    dapp.farm_env!(|farm, _clock, admin_witness, _ipx_metadata, _scenario| {
         farm.pause<IPX, Test>(admin_witness);
 
         assert_eq(farm.paused<IPX>(), true);
@@ -209,7 +209,7 @@ fun test_pause_invalid_admin() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, _clock, _admin_witness, _ipx_metadata, _scenario| {
+    dapp.farm_env!(|farm, _clock, _admin_witness, _ipx_metadata, _scenario| {
         let invalid_admin_witness = access_control::sign_in_for_testing<USDC>(1);
 
         farm.pause<IPX, USDC>(&invalid_admin_witness);
@@ -230,7 +230,7 @@ fun test_unpause_invalid_admin() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, _clock, _admin_witness, _ipx_metadata, _scenario| {
+    dapp.farm_env!(|farm, _clock, _admin_witness, _ipx_metadata, _scenario| {
         let invalid_admin_witness = access_control::sign_in_for_testing<USDC>(1);
 
         farm.unpause<IPX, USDC>(&invalid_admin_witness);
@@ -251,7 +251,7 @@ fun test_set_rewards_per_second_invalid_admin() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, clock, _admin_witness, _ipx_metadata, _scenario| {
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, _scenario| {
         let invalid_admin_witness = access_control::sign_in_for_testing<USDC>(1);
 
         farm.set_rewards_per_second<IPX, SUI, USDC>(clock, &invalid_admin_witness, 1_000);
@@ -266,7 +266,7 @@ fun test_stake() {
 
     dapp.add_default_farm(0);
 
-    dapp.farm_tx!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
         let mut account1 = farm.new_account<IPX>(scenario.ctx());
         let mut account2 = farm.new_account<IPX>(scenario.ctx());
 
@@ -373,7 +373,128 @@ fun test_stake() {
     dapp.end();
 }
 
-macro fun farm_tx(
+#[test]
+fun test_unstake() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account1 = farm.new_account<IPX>(scenario.ctx());
+        let mut account2 = farm.new_account<IPX>(scenario.ctx());
+
+        assert_eq(farm.total_stake_amount<IPX>(), 0);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        clock.increase_seconds(7);
+
+        let removed_coin = account1.unstake<IPX>(
+            farm,
+            clock,
+            7 * POW_10_9,
+            scenario.ctx(),
+        );
+
+        assert_eq(removed_coin.burn_for_testing(), 7 * POW_10_9);
+
+        let sui_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        assert_eq(
+            account1.account_rewards<IPX, SUI>(),
+            DEFAULT_SUI_REWARDS_PER_SECOND * 7,
+        );
+        assert_eq(
+            account1.account_rewards<IPX, USDC>(),
+            DEFAULT_USDC_REWARDS_PER_SECOND * 7,
+        );
+        assert_eq(
+            account1.account_reward_debts<IPX, SUI>(),
+            sui_accrued_rewards_per_share * 3 / PRECISION,
+        );
+        assert_eq(
+            account1.account_reward_debts<IPX, USDC>(),
+            usdc_accrued_rewards_per_share * 3 / PRECISION,
+        );
+        assert_eq(
+            account1.account_balance(),
+            3 * POW_10_9,
+        );
+
+        account2.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(8 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        assert_eq(
+            account2.account_rewards<IPX, SUI>(),
+            0,
+        );
+        assert_eq(
+            account2.account_rewards<IPX, USDC>(),
+            0,
+        );
+        assert_eq(
+            account2.account_reward_debts<IPX, SUI>(),
+            sui_accrued_rewards_per_share * 8 / PRECISION,
+        );
+        assert_eq(
+            account2.account_reward_debts<IPX, USDC>(),
+            usdc_accrued_rewards_per_share * 8 / PRECISION,
+        );
+        assert_eq(
+            account2.account_balance(),
+            8 * POW_10_9,
+        );
+
+        clock.increase_seconds(7);
+
+        let removed_coin2 = account2.unstake<IPX>(
+            farm,
+            clock,
+            8 * POW_10_9,
+            scenario.ctx(),
+        );
+
+        assert_eq(removed_coin2.burn_for_testing(), 8 * POW_10_9);
+
+        assert_eq(
+            account2.account_rewards<IPX, SUI>(),
+            DEFAULT_SUI_REWARDS_PER_SECOND * 8 * 7 / 11,
+        );
+        assert_eq(
+            account2.account_rewards<IPX, USDC>(),
+            DEFAULT_USDC_REWARDS_PER_SECOND * 8 * 7 / 11,
+        );
+        assert_eq(
+            account2.account_reward_debts<IPX, SUI>(),
+            0,
+        );
+        assert_eq(
+            account2.account_reward_debts<IPX, USDC>(),
+            0,
+        );
+        assert_eq(
+            account2.account_balance(),
+            0,
+        );
+
+        destroy(account1);
+        destroy(account2);
+    });
+
+    dapp.end();
+}
+
+macro fun farm_env(
     $dapp: &mut Dapp,
     $fn: |
         &mut InterestFarm<IPX>,
@@ -400,7 +521,7 @@ macro fun farm_tx(
     dapp.farm.fill(farm);
 }
 
-macro fun tx(
+macro fun env(
     $dapp: &mut Dapp,
     $fn: |&mut Clock, &mut AdminWitness<Test>, &mut CoinMetadata<IPX>, &mut Scenario|,
 ) {
