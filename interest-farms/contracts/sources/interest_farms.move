@@ -226,9 +226,7 @@ public fun request_new_farm<Stake, Admin>(
         rewards: vector[],
         reward_data: vec_map::empty(),
         total_stake_amount: 0,
-        precision: (
-            10u64.pow(coin_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
-        ) as u256,
+        precision: 10u256.pow(coin_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
         start_timestamp,
         paused: false,
         admin_type: type_name::get<Admin>(),

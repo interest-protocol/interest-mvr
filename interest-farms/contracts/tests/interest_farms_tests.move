@@ -77,9 +77,7 @@ fun test_new_farm() {
         assert_eq(interest_farm::total_stake_amount<IPX>(&farm), 0);
         assert_eq(
             interest_farm::precision<IPX>(&farm),
-            (
-                10u64.pow(ipx_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
-            ) as u256,
+            10u256.pow(ipx_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
         );
         assert_eq(interest_farm::start_timestamp<IPX>(&farm), start_time);
         assert_eq(interest_farm::paused<IPX>(&farm), false);
