@@ -632,6 +632,78 @@ fun test_calculations() {
     dapp.end();
 }
 
+#[test]
+fun test_rewards_tracking() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account1 = farm.new_account<IPX>(scenario.ctx());
+
+        let sui_rewards = farm.rewards<IPX, SUI>();
+        let usdc_rewards = farm.rewards<IPX, USDC>();
+
+        assert_eq(sui_rewards, DEFAULT_SUI_REWARDS);
+        assert_eq(usdc_rewards, DEFAULT_USDC_REWARDS);
+
+        clock.increase_seconds(10);
+
+        let sui_rewards = farm.rewards<IPX, SUI>();
+        let usdc_rewards = farm.rewards<IPX, USDC>();
+
+        assert_eq(sui_rewards, DEFAULT_SUI_REWARDS);
+        assert_eq(usdc_rewards, DEFAULT_USDC_REWARDS);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        clock.increase_seconds(10);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_rewards = farm.rewards<IPX, SUI>();
+        let usdc_rewards = farm.rewards<IPX, USDC>();
+
+        assert_eq(sui_rewards, DEFAULT_SUI_REWARDS - DEFAULT_SUI_REWARDS_PER_SECOND * 10);
+        assert_eq(usdc_rewards, DEFAULT_USDC_REWARDS - DEFAULT_USDC_REWARDS_PER_SECOND * 10);
+
+        assert_eq(farm.balance_value<IPX, SUI>(), DEFAULT_SUI_REWARDS);
+        assert_eq(farm.balance_value<IPX, USDC>(), DEFAULT_USDC_REWARDS);
+
+        clock.increase_seconds(POW_10_9);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_rewards = farm.rewards<IPX, SUI>();
+        let usdc_rewards = farm.rewards<IPX, USDC>();
+
+        assert_eq(sui_rewards, 0);
+        assert_eq(usdc_rewards, 0);
+
+        assert_eq(farm.balance_value<IPX, SUI>(), DEFAULT_SUI_REWARDS);
+        assert_eq(farm.balance_value<IPX, USDC>(), DEFAULT_USDC_REWARDS);
+
+        destroy(account1);
+    });
+
+    dapp.end();
+}
+
 macro fun farm_env(
     $dapp: &mut Dapp,
     $fn: |
@@ -746,6 +818,12 @@ fun accrued_rewards_per_share<Stake, Reward>(farm: &InterestFarm<Stake>): u256 {
     accrued_rewards_per_share
 }
 
+fun rewards<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
+    let (rewards, _, _, _) = interest_farm::reward_data<Stake, Reward>(farm);
+
+    rewards
+}
+
 fun assert_reward_data<Stake, Reward>(
     farm: &InterestFarm<Stake>,
     expected_rewards: u64,
@@ -770,6 +848,7 @@ fun increase_seconds(clock: &mut Clock, seconds: u64) {
     clock.increment_for_testing(seconds * 1_000);
 }
 
+use fun rewards as InterestFarm.rewards;
 use fun increase_seconds as Clock.increase_seconds;
 use fun assert_reward_data as InterestFarm.assert_reward_data;
 use fun accrued_rewards_per_share as InterestFarm.accrued_rewards_per_share;
