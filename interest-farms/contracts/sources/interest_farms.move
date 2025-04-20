@@ -325,6 +325,49 @@ fun assert_belongs_to_farm<Stake>(
     );
 }
 
+fun pending_rewards<Stake, Reward>(
+    account: &InterestFarmAccount<Stake>,
+    farm: &InterestFarm<Stake>,
+    clock: &Clock,
+): u64 {
+    let reward_name = type_name::get<Reward>();
+
+    let now = clock.now();
+
+    let reward_data = &farm.reward_data[&reward_name];
+
+    let pred = farm.total_stake_amount == 0 || farm.start_timestamp > now;
+
+    let rewards_available = farm.balance<_, Reward>(reward_name).value();
+
+    let accrued_rewards_per_share = if (pred) {
+        reward_data.accrued_rewards_per_share
+    } else {
+        let (accrued_rewards_per_share, _) = calculate_accrued_rewards(
+            reward_data.rewards_per_second,
+            reward_data.accrued_rewards_per_share,
+            farm.total_stake_amount,
+            reward_data.rewards,
+            farm.precision,
+            now - reward_data.last_reward_timestamp,
+        );
+
+        accrued_rewards_per_share
+    };
+
+    let current_reward_value = account.rewards[&reward_name];
+
+    let pending_rewards =
+        calculate_pending_rewards(
+        account,
+        reward_name,
+        farm.precision,
+        accrued_rewards_per_share,
+    ) + current_reward_value;
+
+    pending_rewards.min(rewards_available)
+}
+
 fun update_farm<Stake>(farm: &mut InterestFarm<Stake>, clock: &Clock) {
     let now = clock.now();
 
@@ -457,6 +500,13 @@ fun default_reward_data(): RewardData {
     }
 }
 
+fun balance<T, Reward>(farm: &InterestFarm<T>, reward: TypeName): &Balance<Reward> {
+    df::borrow<RewardBalance, Balance<Reward>>(
+        &farm.id,
+        RewardBalance(reward),
+    )
+}
+
 fun balance_mut<T, Reward>(farm: &mut InterestFarm<T>, reward: TypeName): &mut Balance<Reward> {
     df::borrow_mut<RewardBalance, Balance<Reward>>(
         &mut farm.id,
@@ -509,11 +559,8 @@ public fun paused<Stake>(farm: &InterestFarm<Stake>): bool {
 }
 
 #[test_only]
-public fun balance<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
-    df::borrow<RewardBalance, Balance<Reward>>(
-        &farm.id,
-        RewardBalance(type_name::get<Reward>()),
-    ).value()
+public fun balance_value<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
+    farm.balance<Stake, Reward>(type_name::get<Reward>()).value()
 }
 
 #[test_only]
@@ -537,4 +584,13 @@ public fun account_reward_debts<Stake, Reward>(account: &InterestFarmAccount<Sta
 #[test_only]
 public fun account_rewards<Stake, Reward>(account: &InterestFarmAccount<Stake>): u64 {
     account.rewards[&type_name::get<Reward>()]
+}
+
+#[test_only]
+public fun pending_rewards_for_test<Stake, Reward>(
+    account: &InterestFarmAccount<Stake>,
+    farm: &InterestFarm<Stake>,
+    clock: &Clock,
+): u64 {
+    account.pending_rewards<_, Reward>(farm, clock)
 }

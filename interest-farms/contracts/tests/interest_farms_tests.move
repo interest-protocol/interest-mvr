@@ -96,8 +96,8 @@ fun test_new_farm() {
         farm.set_rewards_per_second<IPX, USDC, Test>(clock, admin_witness, 2_000);
         farm.add_reward<IPX, USDC>(clock, mint_for_testing(3_500 * POW_10_9, scenario.ctx()));
 
-        assert_eq(farm.balance<IPX, USDC>(), 3_500 * POW_10_9);
-        assert_eq(farm.balance<IPX, SUI>(), 1_000 * POW_10_9);
+        assert_eq(farm.balance_value<IPX, USDC>(), 3_500 * POW_10_9);
+        assert_eq(farm.balance_value<IPX, SUI>(), 1_000 * POW_10_9);
 
         farm.assert_reward_data<IPX, USDC>(3_500 * POW_10_9, 2_000, 1_500, 0);
 
@@ -521,10 +521,12 @@ fun test_harvest() {
         let usdc_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, USDC>();
 
         assert_eq(
-             sui_accrued_rewards_per_share, 0
+            sui_accrued_rewards_per_share,
+            0,
         );
         assert_eq(
-            usdc_accrued_rewards_per_share, 0
+            usdc_accrued_rewards_per_share,
+            0,
         );
 
         clock.increase_seconds(12);
@@ -540,12 +542,91 @@ fun test_harvest() {
 
         assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
         assert_eq(account1.account_balance(), 10 * POW_10_9);
-        assert_eq(account1.account_reward_debts<IPX, SUI>(), sui_accrued_rewards_per_share2 * 10 / PRECISION);
-        assert_eq(account1.account_reward_debts<IPX, USDC>(), usdc_accrued_rewards_per_share2 * 10 / PRECISION);
+        assert_eq(
+            account1.account_reward_debts<IPX, SUI>(),
+            sui_accrued_rewards_per_share2 * 10 / PRECISION,
+        );
+        assert_eq(
+            account1.account_reward_debts<IPX, USDC>(),
+            usdc_accrued_rewards_per_share2 * 10 / PRECISION,
+        );
         assert_eq(account1.account_rewards<IPX, SUI>(), 0);
         assert_eq(account1.account_rewards<IPX, USDC>(), 0);
 
         destroy(account1);
+    });
+
+    dapp.end();
+}
+
+#[test]
+fun test_calculations() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account1 = farm.new_account<IPX>(scenario.ctx());
+        let mut account2 = farm.new_account<IPX>(scenario.ctx());
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(6 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        assert_eq(sui_accrued_rewards_per_share, 0);
+        assert_eq(usdc_accrued_rewards_per_share, 0);
+
+        clock.increase_seconds(12);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(4 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        account2.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(6 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let pending_sui_rewards = account1.pending_rewards_for_test<IPX, SUI>(farm, clock);
+
+        let sui_accrued_rewards_per_share =
+            sui_accrued_rewards_per_share + (
+            (DEFAULT_SUI_REWARDS_PER_SECOND as u256) * 12 * (POW_10_9 as u256) * PRECISION / (6 * POW_10_9 as u256)
+        );
+
+        assert_eq(pending_sui_rewards, DEFAULT_SUI_REWARDS_PER_SECOND * 12);
+
+        clock.increase_seconds(12);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_accrued_rewards_per_share2 =
+            sui_accrued_rewards_per_share + ((DEFAULT_SUI_REWARDS_PER_SECOND as u256) * 12 * (POW_10_9 as u256) * PRECISION / (16 * POW_10_9 as u256));
+
+        assert_eq(farm.accrued_rewards_per_share<IPX, SUI>(), sui_accrued_rewards_per_share2);
+        assert_eq(
+            account1.account_reward_debts<IPX, SUI>(),
+            sui_accrued_rewards_per_share2 * 11 / PRECISION,
+        );
+
+        destroy(account1);
+        destroy(account2);
     });
 
     dapp.end();
