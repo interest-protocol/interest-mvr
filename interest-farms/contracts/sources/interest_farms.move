@@ -90,9 +90,9 @@ public fun destroy_account<Stake>(account: InterestFarmAccount<Stake>) {
 }
 
 public fun stake<Stake>(
+    account: &mut InterestFarmAccount<Stake>,
     farm: &mut InterestFarm<Stake>,
     clock: &Clock,
-    account: &mut InterestFarmAccount<Stake>,
     deposit: Coin<Stake>,
     _ctx: &mut TxContext,
 ) {
@@ -119,9 +119,9 @@ public fun stake<Stake>(
 }
 
 public fun unstake<Stake>(
+    account: &mut InterestFarmAccount<Stake>,
     farm: &mut InterestFarm<Stake>,
     clock: &Clock,
-    account: &mut InterestFarmAccount<Stake>,
     amount: u64,
     ctx: &mut TxContext,
 ): Coin<Stake> {
@@ -147,9 +147,9 @@ public fun unstake<Stake>(
 }
 
 public fun harvest<Stake, Reward>(
+    account: &mut InterestFarmAccount<Stake>,
     farm: &mut InterestFarm<Stake>,
     clock: &Clock,
-    account: &mut InterestFarmAccount<Stake>,
     ctx: &mut TxContext,
 ): Coin<Reward> {
     farm.assert_is_live();
@@ -538,6 +538,3 @@ public fun account_reward_debts<Stake, Reward>(account: &InterestFarmAccount<Sta
 public fun account_rewards<Stake, Reward>(account: &InterestFarmAccount<Stake>): u64 {
     account.rewards[&type_name::get<Reward>()]
 }
-
-
-

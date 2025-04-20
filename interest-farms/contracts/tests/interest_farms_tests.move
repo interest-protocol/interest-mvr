@@ -14,11 +14,27 @@ use sui::{
 
 const ADMIN: address = @0x1;
 
+const ALICE: address = @0x2;
+
+const BOB: address = @0x3;
+
 const POW_10_9: u64 = 1_000_000_000;
+
+const POW_10_6: u64 = 1_000_000;
 
 public struct Test() has drop;
 
 public struct USDC() has drop;
+
+const DEFAULT_USDC_REWARDS_PER_SECOND: u64 = 10  * POW_10_6;
+
+const DEFAULT_SUI_REWARDS_PER_SECOND: u64 = 2 * POW_10_9;
+
+const DEFAULT_USDC_REWARDS: u64 = 3_500 * POW_10_9;
+
+const DEFAULT_SUI_REWARDS: u64 = 1_000 * POW_10_9;
+
+const PRECISION: u256 = 1__000_000_000;
 
 public struct Dapp {
     clock: Option<Clock>,
@@ -79,6 +95,9 @@ fun test_new_farm() {
 
         farm.set_rewards_per_second<IPX, USDC, Test>(clock, admin_witness, 2_000);
         farm.add_reward<IPX, USDC>(clock, mint_for_testing(3_500 * POW_10_9, scenario.ctx()));
+
+        assert_eq(farm.balance<IPX, USDC>(), 3_500 * POW_10_9);
+        assert_eq(farm.balance<IPX, SUI>(), 1_000 * POW_10_9);
 
         farm.assert_reward_data<IPX, USDC>(3_500 * POW_10_9, 2_000, 1_500, 0);
 
@@ -241,6 +260,119 @@ fun test_set_rewards_per_second_invalid_admin() {
     dapp.end();
 }
 
+#[test]
+fun test_stake() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_tx!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account1 = farm.new_account<IPX>(scenario.ctx());
+        let mut account2 = farm.new_account<IPX>(scenario.ctx());
+
+        assert_eq(farm.total_stake_amount<IPX>(), 0);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(account1.account_balance(), 10 * POW_10_9);
+        assert_eq(account1.account_reward_debts<IPX, SUI>(), 0);
+        assert_eq(account1.account_reward_debts<IPX, USDC>(), 0);
+        assert_eq(account1.account_rewards<IPX, SUI>(), 0);
+        assert_eq(account1.account_rewards<IPX, USDC>(), 0);
+
+        farm.assert_reward_data<IPX, SUI>(
+            DEFAULT_SUI_REWARDS,
+            DEFAULT_SUI_REWARDS_PER_SECOND,
+            0,
+            0,
+        );
+        farm.assert_reward_data<IPX, USDC>(
+            DEFAULT_USDC_REWARDS,
+            DEFAULT_USDC_REWARDS_PER_SECOND,
+            0,
+            0,
+        );
+
+        clock.increase_seconds(10);
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(5 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        // 10 seconds
+        assert_eq(
+            sui_accrued_rewards_per_share,
+            (DEFAULT_SUI_REWARDS_PER_SECOND as u256) * 10 * (POW_10_9 as u256) * PRECISION / (10 * POW_10_9 as u256),
+        );
+
+        assert_eq(
+            usdc_accrued_rewards_per_share,
+            (DEFAULT_USDC_REWARDS_PER_SECOND as u256) * 10 * (POW_10_9 as u256) * PRECISION / (10 * POW_10_9 as u256),
+        );
+
+        assert_eq(
+            account1.account_reward_debts<IPX, SUI>(),
+            15 * sui_accrued_rewards_per_share / PRECISION,
+        );
+        assert_eq(
+            account1.account_reward_debts<IPX, USDC>(),
+            15 * usdc_accrued_rewards_per_share / PRECISION,
+        );
+        assert_eq(account1.account_rewards<IPX, SUI>(), 10 * DEFAULT_SUI_REWARDS_PER_SECOND);
+        assert_eq(account1.account_rewards<IPX, USDC>(), 10 * DEFAULT_USDC_REWARDS_PER_SECOND);
+        assert_eq(account1.account_balance(), 15 * POW_10_9);
+
+        clock.increase_seconds(5);
+
+        account2.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(20 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        let sui_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        let expected_sui_accrued_rewards_per_share =
+            sui_accrued_rewards_per_share + ((DEFAULT_SUI_REWARDS_PER_SECOND as u256) * 5 * (POW_10_9 as u256) * PRECISION / (15 * POW_10_9 as u256));
+        let expected_usdc_accrued_rewards_per_share =
+            usdc_accrued_rewards_per_share + ((DEFAULT_USDC_REWARDS_PER_SECOND as u256) * 5 * (POW_10_9 as u256) * PRECISION / (15 * POW_10_9 as u256));
+
+        assert_eq(sui_accrued_rewards_per_share2, expected_sui_accrued_rewards_per_share);
+        assert_eq(usdc_accrued_rewards_per_share2, expected_usdc_accrued_rewards_per_share);
+
+        assert_eq(
+            account2.account_reward_debts<IPX, SUI>(),
+            20 * sui_accrued_rewards_per_share2 / PRECISION,
+        );
+        assert_eq(
+            account2.account_reward_debts<IPX, USDC>(),
+            20 * usdc_accrued_rewards_per_share2 / PRECISION,
+        );
+        assert_eq(account2.account_rewards<IPX, SUI>(), 0);
+        assert_eq(account2.account_rewards<IPX, USDC>(), 0);
+        assert_eq(account2.account_balance(), 20 * POW_10_9);
+
+        destroy(account1);
+        destroy(account2);
+    });
+
+    dapp.end();
+}
+
 macro fun farm_tx(
     $dapp: &mut Dapp,
     $fn: |
@@ -306,11 +438,19 @@ fun add_default_farm(dapp: &mut Dapp, start_time: u64) {
 
     let mut farm = new_request_farm.new_farm<IPX>(scenario.ctx());
 
-    farm.set_rewards_per_second<IPX, SUI, Test>(clock, admin_witness, 1_000);
-    farm.add_reward<IPX, SUI>(clock, mint_for_testing(1_000 * POW_10_9, scenario.ctx()));
+    farm.set_rewards_per_second<IPX, SUI, Test>(
+        clock,
+        admin_witness,
+        DEFAULT_SUI_REWARDS_PER_SECOND,
+    );
+    farm.add_reward<IPX, SUI>(clock, mint_for_testing(DEFAULT_SUI_REWARDS, scenario.ctx()));
 
-    farm.set_rewards_per_second<IPX, USDC, Test>(clock, admin_witness, 2_000);
-    farm.add_reward<IPX, USDC>(clock, mint_for_testing(3_500 * POW_10_9, scenario.ctx()));
+    farm.set_rewards_per_second<IPX, USDC, Test>(
+        clock,
+        admin_witness,
+        DEFAULT_USDC_REWARDS_PER_SECOND,
+    );
+    farm.add_reward<IPX, USDC>(clock, mint_for_testing(DEFAULT_USDC_REWARDS, scenario.ctx()));
 
     dapp.farm.fill(farm);
 }
@@ -341,6 +481,12 @@ fun end(dapp: Dapp) {
     destroy(dapp);
 }
 
+fun accrued_rewards_per_share<Stake, Reward>(farm: &InterestFarm<Stake>): u256 {
+    let (_, _, _, accrued_rewards_per_share) = interest_farm::reward_data<Stake, Reward>(farm);
+
+    accrued_rewards_per_share
+}
+
 fun assert_reward_data<Stake, Reward>(
     farm: &InterestFarm<Stake>,
     expected_rewards: u64,
@@ -367,3 +513,4 @@ fun increase_seconds(clock: &mut Clock, seconds: u64) {
 
 use fun increase_seconds as Clock.increase_seconds;
 use fun assert_reward_data as InterestFarm.assert_reward_data;
+use fun accrued_rewards_per_share as InterestFarm.accrued_rewards_per_share;
