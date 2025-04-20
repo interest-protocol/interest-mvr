@@ -494,6 +494,63 @@ fun test_unstake() {
     dapp.end();
 }
 
+#[test]
+fun test_harvest() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account1 = farm.new_account<IPX>(scenario.ctx());
+
+        account1.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(account1.account_balance(), 10 * POW_10_9);
+        assert_eq(account1.account_reward_debts<IPX, SUI>(), 0);
+        assert_eq(account1.account_reward_debts<IPX, USDC>(), 0);
+        assert_eq(account1.account_rewards<IPX, SUI>(), 0);
+        assert_eq(account1.account_rewards<IPX, USDC>(), 0);
+
+        let sui_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        assert_eq(
+             sui_accrued_rewards_per_share, 0
+        );
+        assert_eq(
+            usdc_accrued_rewards_per_share, 0
+        );
+
+        clock.increase_seconds(12);
+
+        let sui_rewards = account1.harvest<IPX, SUI>(farm, clock, scenario.ctx());
+        let usdc_rewards = account1.harvest<IPX, USDC>(farm, clock, scenario.ctx());
+
+        assert_eq(sui_rewards.burn_for_testing(), 12 * DEFAULT_SUI_REWARDS_PER_SECOND);
+        assert_eq(usdc_rewards.burn_for_testing(), 12 * DEFAULT_USDC_REWARDS_PER_SECOND);
+
+        let sui_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, SUI>();
+        let usdc_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, USDC>();
+
+        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(account1.account_balance(), 10 * POW_10_9);
+        assert_eq(account1.account_reward_debts<IPX, SUI>(), sui_accrued_rewards_per_share2 * 10 / PRECISION);
+        assert_eq(account1.account_reward_debts<IPX, USDC>(), usdc_accrued_rewards_per_share2 * 10 / PRECISION);
+        assert_eq(account1.account_rewards<IPX, SUI>(), 0);
+        assert_eq(account1.account_rewards<IPX, USDC>(), 0);
+
+        destroy(account1);
+    });
+
+    dapp.end();
+}
+
 macro fun farm_env(
     $dapp: &mut Dapp,
     $fn: |
