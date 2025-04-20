@@ -517,6 +517,8 @@ fun balance_mut<T, Reward>(farm: &mut InterestFarm<T>, reward: TypeName): &mut B
 use fun timestamp_s as Clock.now;
 use fun update_farm as InterestFarm.update;
 
+public use fun destroy_account as InterestFarmAccount.destroy;
+
 // === Test Only Functions ===
 
 #[test_only]
@@ -591,4 +593,15 @@ public fun pending_rewards_for_test<Stake, Reward>(
     clock: &Clock,
 ): u64 {
     account.pending_rewards<_, Reward>(farm, clock)
+}
+
+#[test_only]
+public fun new_invalid_account_for_test<Stake>(ctx: &mut TxContext): InterestFarmAccount<Stake> {
+    InterestFarmAccount {
+        id: object::new(ctx),
+        farm: @0x0,
+        balance: balance::zero(),
+        reward_debts: vec_map::empty(),
+        rewards: vec_map::empty(),
+    }
 }

@@ -203,6 +203,209 @@ fun test_new_account_farm_paused() {
     dapp.end();
 }
 
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::EFarmIsPaused,
+        location = interest_farm,
+    ),
+]
+fun test_stake_farm_paused() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, admin_witness, _ipx_metadata, scenario| {
+        let mut account = farm.new_account<IPX>(scenario.ctx());
+
+        farm.pause<IPX, Test>(admin_witness);
+
+        account.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        destroy(account);
+    });
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::EAccountAndFarmMismatch,
+        location = interest_farm,
+    ),
+]
+fun test_stake_with_invalid_account() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account = interest_farm::new_invalid_account_for_test<IPX>(scenario.ctx());
+
+        account.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        destroy(account);
+    });
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::EAccountAndFarmMismatch,
+        location = interest_farm,
+    ),
+]
+fun test_unstake_with_invalid_account() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account = interest_farm::new_invalid_account_for_test<IPX>(scenario.ctx());
+
+        account
+            .unstake<IPX>(
+                farm,
+                clock,
+                10 * POW_10_9,
+                scenario.ctx(),
+            )
+            .burn_for_testing();
+
+        destroy(account);
+    });
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::EFarmIsPaused,
+        location = interest_farm,
+    ),
+]
+fun test_harvest_farm_paused() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, admin_witness, _ipx_metadata, scenario| {
+        let mut account = farm.new_account<IPX>(scenario.ctx());
+
+        farm.pause<IPX, Test>(admin_witness);
+
+        account
+            .harvest<IPX, SUI>(
+                farm,
+                clock,
+                scenario.ctx(),
+            )
+            .burn_for_testing();
+
+        destroy(account);
+    });
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::EAccountAndFarmMismatch,
+        location = interest_farm,
+    ),
+]
+fun test_harvest_with_invalid_account() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account = interest_farm::new_invalid_account_for_test<IPX>(scenario.ctx());
+
+        account
+            .harvest<IPX, SUI>(
+                farm,
+                clock,
+                scenario.ctx(),
+            )
+            .burn_for_testing();
+
+        destroy(account);
+    });
+    dapp.end();
+}
+
+#[test, expected_failure(abort_code = interest_farm_errors::EZeroRewards, location = interest_farm)]
+fun test_harvest_zero_rewards() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account = farm.new_account<IPX>(scenario.ctx());
+
+        account
+            .harvest<IPX, SUI>(
+                farm,
+                clock,
+                scenario.ctx(),
+            )
+            .burn_for_testing();
+
+        destroy(account);
+    });
+
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
+        abort_code = interest_farm_errors::ENonZeroRewards,
+        location = interest_farm,
+    ),
+]
+fun test_destroy_account_with_rewards() {
+    let mut dapp = deploy();
+
+    dapp.add_default_farm(0);
+
+    dapp.farm_env!(|farm, clock, _admin_witness, _ipx_metadata, scenario| {
+        let mut account = farm.new_account<IPX>(scenario.ctx());
+
+        account.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(10 * POW_10_9, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        clock.increase_seconds(10);
+
+        account.stake<IPX>(
+            farm,
+            clock,
+            mint_for_testing(0, scenario.ctx()),
+            scenario.ctx(),
+        );
+
+        account.destroy();
+    });
+
+    dapp.end();
+}
+
 #[test]
 fun test_pause_and_unpause_farm() {
     let mut dapp = deploy();
