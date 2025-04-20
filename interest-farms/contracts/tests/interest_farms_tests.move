@@ -149,6 +149,33 @@ fun test_new_farm_invalid_start_timestamp() {
 #[
     test,
     expected_failure(
+        abort_code = interest_farm_errors::EMissingRewards,
+        location = interest_farm,
+    ),
+]
+fun test_new_no_rewards() {
+    let mut dapp = deploy();
+
+    dapp.env!(|clock, admin_witness, ipx_metadata, scenario| {
+        let mut new_request_farm = interest_farm::request_new_farm<IPX, Test>(
+            clock,
+            ipx_metadata,
+            admin_witness,
+            0,
+            scenario.ctx(),
+        );
+
+        let farm = new_request_farm.new_farm<IPX>(scenario.ctx());
+
+        destroy(farm);
+    });
+
+    dapp.end();
+}
+
+#[
+    test,
+    expected_failure(
         abort_code = interest_farm_errors::EFarmIsPaused,
         location = interest_farm,
     ),

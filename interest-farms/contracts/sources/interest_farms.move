@@ -260,7 +260,7 @@ public fun new_farm<Stake>(
 ): InterestFarm<Stake> {
     let NewFarmRequest { farm } = request;
 
-    assert!(farm.rewards.length() > 0, interest_farms::interest_farm_errors::missing_rewards!());
+    assert!(farm.rewards.length() != 0, interest_farms::interest_farm_errors::missing_rewards!());
 
     interest_farm_events::emit_new_farm(farm.id.to_address(), farm.rewards, farm.admin_type);
 
