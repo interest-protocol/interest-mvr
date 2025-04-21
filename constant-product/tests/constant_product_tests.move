@@ -6,11 +6,11 @@ use sui::test_utils::assert_eq;
 
 #[test]
 fun test_invariant() {
-    assert_eq(constant_product::k(0, 1), 0);
-    assert_eq(constant_product::k(1, 0), 0);
-    assert_eq(constant_product::k(1234, 1234), 1234 * 1234);
-    assert_eq(constant_product::k(1000000000000000003, 3), 3000000000000000009);
-    assert_eq(constant_product::k(3000000000000000009, 1), 3000000000000000009);
+    assert_eq(constant_product::k!(0, 1), 0);
+    assert_eq(constant_product::k!(1, 0), 0);
+    assert_eq(constant_product::k!(1234, 1234), 1234 * 1234);
+    assert_eq(constant_product::k!(1000000000000000003, 3), 3000000000000000009);
+    assert_eq(constant_product::k!(3000000000000000009, 1), 3000000000000000009);
 }
 
 #[test]
