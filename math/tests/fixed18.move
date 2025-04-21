@@ -28,7 +28,7 @@ use fun fixed18::from_u256 as u256.from;
 
 #[test]
 fun test_scalar() {
-    assert_eq(base(), FIXED_18_BASE);
+    assert_eq(base!(), FIXED_18_BASE);
 }
 
 #[test]
