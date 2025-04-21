@@ -32,13 +32,19 @@ use interest_math::u256::{
     mul_div_down,
     try_mul_div_up,
     average_vector,
-    try_mul_div_down
+    try_mul_div_down,
+    max_value
 };
 use sui::test_utils::assert_eq;
 
 const MAX_U256: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 const MIN: u256 = 1234;
 const MAX: u256 = 5678;
+
+#[test]
+fun test_max_value() {
+    assert_eq(max_value!(), MAX_U256);
+}
 
 #[test]
 fun test_try_add() {

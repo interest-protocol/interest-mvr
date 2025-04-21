@@ -145,6 +145,6 @@ public fun log256_up(x: u128): u8 {
 
 // === Utility Functions ===
 
-public fun max_value(): u128 {
-    (MAX_U128 as u128)
+public macro fun max_value(): u128 {
+    std::u128::max_value!()
 }

@@ -35,13 +35,19 @@ use interest_math::u64::{
     wrapping_sub,
     try_mul_div_up,
     average_vector,
-    try_mul_div_down
+    try_mul_div_down,
+    max_value
 };
 use sui::test_utils::assert_eq;
 
 const MAX_U64: u64 = 18446744073709551615;
 const MIN: u64 = 1234;
 const MAX: u64 = 5678;
+
+#[test]
+fun test_max_value() {
+    assert_eq(max_value!(), MAX_U64);
+}
 
 #[test]
 fun test_wrapping_add() {
