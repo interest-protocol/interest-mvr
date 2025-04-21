@@ -1,11 +1,5 @@
 module interest_bps::bps;
 
-// === Constants ===
-
-/// 1 bps = 0.01%
-/// 10,000 bps = 100%
-const MAX_BPS: u64 = 10_000;
-
 // === Errors ===
 
 const EOverflow: u64 = 0;
@@ -51,18 +45,17 @@ public fun div_up(bps_x: BPS, scalar: u64): BPS {
     BPS(if (bps_x.0 == 0) 0 else 1 + (bps_x.0 - 1) / scalar)
 }
 
-
 /// @total is a raw value, not a BPS value.
 /// It rounds down to the nearest integer.
 public fun calc(bps: BPS, total: u64): u64 {
-    let amount = ((bps.0 as u128) * (total as u128)) / (MAX_BPS as u128);
+    let amount = ((bps.0 as u128) * (total as u128)) / (max_value!() as u128);
     amount as u64
 }
 
 /// @total is a raw value, not a BPS value.
 /// It rounds up to the nearest integer.
 public fun calc_up(bps: BPS, total: u64): u64 {
-    let (x, y, z) = (bps.0 as u128, total as u128, MAX_BPS as u128);
+    let (x, y, z) = (bps.0 as u128, total as u128, max_value!() as u128);
 
     let amount = ((x * y) / z) + if ((x * y) % z > 0) 1 else 0;
 
@@ -71,6 +64,8 @@ public fun calc_up(bps: BPS, total: u64): u64 {
 
 // === Public View Functions ===
 
+/// 1 bps = 0.01%
+/// 10,000 bps = 100%
 public macro fun max_value(): u64 {
     10_000
 }
@@ -82,6 +77,6 @@ public fun value(bps: BPS): u64 {
 // === Private Functions ===
 
 fun assert_overflow(value: u64): u64 {
-    assert!(value <= MAX_BPS, EOverflow);
+    assert!(value <= max_value!(), EOverflow);
     value
 }

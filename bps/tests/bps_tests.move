@@ -7,8 +7,8 @@ use std::unit_test::assert_eq;
 const MAX_BPS: u64 = 10_000;
 
 #[test]
-fun test_max_bps() {
-    assert_eq!(bps::max_bps(), MAX_BPS);
+fun test_max_value() {
+    assert_eq!(bps::max_value!(), MAX_BPS);
 }
 
 #[random_test]
