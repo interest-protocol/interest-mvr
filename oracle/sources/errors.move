@@ -1,7 +1,7 @@
 module interest_price_oracle::oracle_errors;
 
 #[test_only]
-const EInvalidTimeLimitMs: u64 = 0;
+const EInvalidTimestampMs: u64 = 0;
 
 #[test_only]
 const EInvalidDeviation: u64 = 1;
@@ -16,7 +16,7 @@ const EOracleMustHaveFeeds: u64 = 3;
 const EInvalidPrice: u64 = 4;
 
 #[test_only]
-const EInvalidTimestampMs: u64 = 5;
+const EInvalidTimeBufferMs: u64 = 5;
 
 #[test_only]
 const EInvalidOracle: u64 = 6;
@@ -33,7 +33,10 @@ const EPriceDeviationTooHigh: u64 = 9;
 #[test_only]
 const EExtensionNotFound: u64 = 10;
 
-public(package) macro fun invalid_time_limit_ms(): u64 {
+#[test_only]
+const EExtensionNotEnabled: u64 = 11;
+
+public(package) macro fun invalid_timestamp_ms(): u64 {
     0
 }
 
@@ -53,7 +56,7 @@ public(package) macro fun invalid_price(): u64 {
     4
 }
 
-public(package) macro fun invalid_timestamp_ms(): u64 {
+public(package) macro fun invalid_time_buffer_ms(): u64 {
     5
 }
 
@@ -75,4 +78,8 @@ public(package) macro fun price_deviation_too_high(): u64 {
 
 public(package) macro fun extension_not_found(): u64 {
     10
+}
+
+public(package) macro fun extension_not_enabled(): u64 {
+    11
 }

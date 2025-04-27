@@ -109,7 +109,12 @@ public fun try_sub(x: Fixed18, y: Fixed18): (bool, Fixed18) {
 }
 
 public fun try_mul_down(x: Fixed18, y: Fixed18): (bool, Fixed18) {
-    let (pred, value) = macro::try_mul_div_down!(x.value, y.value, base!(), std::u256::max_value!());
+    let (pred, value) = macro::try_mul_div_down!(
+        x.value,
+        y.value,
+        base!(),
+        std::u256::max_value!(),
+    );
     (pred, Fixed18 { value })
 }
 
@@ -119,7 +124,12 @@ public fun try_mul_up(x: Fixed18, y: Fixed18): (bool, Fixed18) {
 }
 
 public fun try_div_down(x: Fixed18, y: Fixed18): (bool, Fixed18) {
-    let (pred, value) = macro::try_mul_div_down!(x.value, base!(), y.value, std::u256::max_value!());
+    let (pred, value) = macro::try_mul_div_down!(
+        x.value,
+        base!(),
+        y.value,
+        std::u256::max_value!(),
+    );
     (pred, Fixed18 { value })
 }
 
@@ -136,6 +146,16 @@ public fun add(x: Fixed18, y: Fixed18): Fixed18 {
 
 public fun sub(x: Fixed18, y: Fixed18): Fixed18 {
     Fixed18 { value: x.value - y.value }
+}
+
+public fun diff(x: Fixed18, y: Fixed18): Fixed18 {
+    let value = macro::diff!(x.value, y.value);
+    Fixed18 { value }
+}
+
+public fun average(x: Fixed18, y: Fixed18): Fixed18 {
+    let value = macro::average!(x.value, y.value);
+    Fixed18 { value }
 }
 
 public fun mul_down(x: Fixed18, y: Fixed18): Fixed18 {
