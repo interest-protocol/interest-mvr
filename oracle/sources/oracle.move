@@ -56,9 +56,9 @@ public fun request(self: &PriceOracle): Request {
     }
 }
 
-public fun report<Witness: drop>(
+public fun report<Feed: drop>(
     request: &mut Request,
-    _: &Witness,
+    _: &Feed,
     price: u128,
     timestamp_ms: u64,
     decimals: u8,
@@ -69,7 +69,7 @@ public fun report<Witness: drop>(
     let report = Report {
         timestamp_ms,
         price: price.to_fixed18(decimals),
-        feed: type_name::get<Witness>(),
+        feed: type_name::get<Feed>(),
     };
 
     request.reports.push_back(report);
