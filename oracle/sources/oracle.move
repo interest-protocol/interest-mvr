@@ -19,7 +19,7 @@ public struct PriceOracle has key, store {
     feeds: VecSet<TypeName>,
     time_buffer_ms: u64,
     deviation: Fixed18,
-    coin: TypeName,
+    asset: TypeName,
     admin: TypeName,
 }
 
@@ -35,7 +35,7 @@ public struct Request {
 }
 
 public struct Price has drop {
-    coin: TypeName,
+    asset: TypeName,
     oracle: address,
     value: u256,
     decimals: u8,
@@ -94,7 +94,7 @@ public fun destroy_request(request: Request, oracle: &PriceOracle, clock: &Clock
             interest_price_oracle::oracle_errors::price_is_stale!(),
         );
 
-        let deviation = leader_price.diff!(report.price).mul_up(leader_price);
+        let deviation = leader_price.diff!(report.price).div_up(leader_price);
         assert!(
             deviation.lte(oracle.deviation),
             interest_price_oracle::oracle_errors::price_deviation_too_high!(),
@@ -103,7 +103,7 @@ public fun destroy_request(request: Request, oracle: &PriceOracle, clock: &Clock
 
     Price {
         oracle: oracle_address,
-        coin: oracle.coin,
+        asset: oracle.asset,
         value: leader_price.to_u256(decimals!()),
         decimals: decimals!(),
         timestamp_ms: leader_timestamp_ms,
@@ -116,8 +116,8 @@ public fun price_oracle(price: &Price): address {
     price.oracle
 }
 
-public fun price_coin(price: &Price): TypeName {
-    price.coin
+public fun price_asset(price: &Price): TypeName {
+    price.asset
 }
 
 public fun price_value(price: &Price): u256 {
@@ -201,13 +201,13 @@ public fun update_deviation<T: drop>(self: &mut PriceOracle, _: &T, deviation: u
 }
 
 // === Admin Functions ===
-public fun new<Coin, Admin>(_: &AdminWitness<Admin>, ctx: &mut TxContext): PriceOracle {
+public fun new<Asset, Admin>(_: &AdminWitness<Admin>, ctx: &mut TxContext): PriceOracle {
     PriceOracle {
         id: object::new(ctx),
         feeds: vec_set::empty(),
         time_buffer_ms: 0,
         deviation: fixed18::from_raw_u128(0),
-        coin: type_name::get<Coin>(),
+        asset: type_name::get<Asset>(),
         admin: type_name::get<Admin>(),
     }
 }
@@ -325,7 +325,7 @@ macro fun decimals(): u8 {
 use fun fixed18_diff as Fixed18.diff;
 use fun fixed18::u128_to_fixed18 as u128.to_fixed18;
 
-public use fun price_coin as Price.coin;
+public use fun price_asset as Price.asset;
 public use fun price_value as Price.value;
 public use fun price_oracle as Price.oracle;
 public use fun price_decimals as Price.decimals;
