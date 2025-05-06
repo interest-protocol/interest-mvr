@@ -7,7 +7,7 @@ use sui::{bag::{Self, Bag}, clock::Clock, dynamic_field as df, vec_set::{Self, V
 
 // === Structs ===
 
-public struct ExtensionKey<phantom T>() has copy, drop, store;
+public struct ExtensionKey<phantom Ext>() has copy, drop, store;
 
 public struct Extension has store {
     bag: Bag,
@@ -134,7 +134,7 @@ public fun price_timestamp_ms(price: &Price): u64 {
 
 // === Extension Functions ===
 
-public fun new<Asset, T: drop>(_: T, ctx: &mut TxContext): PriceOracle {
+public fun new<Asset, Ext: drop>(_: Ext, ctx: &mut TxContext): PriceOracle {
     let mut price_oracle = PriceOracle {
         id: object::new(ctx),
         feeds: vec_set::empty(),
@@ -146,7 +146,7 @@ public fun new<Asset, T: drop>(_: T, ctx: &mut TxContext): PriceOracle {
 
     df::add(
         &mut price_oracle.id,
-        ExtensionKey<T>(),
+        ExtensionKey<Ext>(),
         Extension {
             bag: bag::new(ctx),
             is_enabled: true,
@@ -156,49 +156,49 @@ public fun new<Asset, T: drop>(_: T, ctx: &mut TxContext): PriceOracle {
     price_oracle
 }
 
-public fun remove_extension<T: drop>(self: &mut PriceOracle, _: T) {
-    let Extension { bag, .. } = df::remove(&mut self.id, ExtensionKey<T>());
+public fun remove_extension<Ext: drop>(self: &mut PriceOracle, _: Ext) {
+    let Extension { bag, .. } = df::remove(&mut self.id, ExtensionKey<Ext>());
     bag.destroy_empty();
 }
 
-public fun enable_extension<T: drop>(self: &mut PriceOracle, _: T) {
-    extension_mut!<T>(self).is_enabled = true;
+public fun enable_extension<Ext: drop>(self: &mut PriceOracle, _: Ext) {
+    extension_mut!<Ext>(self).is_enabled = true;
 }
 
-public fun disable_extension<T: drop>(self: &mut PriceOracle, _: T) {
-    extension_mut!<T>(self).is_enabled = false;
+public fun disable_extension<Ext: drop>(self: &mut PriceOracle, _: Ext) {
+    extension_mut!<Ext>(self).is_enabled = false;
 }
 
-public fun bag<T: drop>(self: &PriceOracle, _: T): &Bag {
-    &self.extension!<T>().bag
+public fun bag<Ext: drop>(self: &PriceOracle, _: Ext): &Bag {
+    &self.extension!<Ext>().bag
 }
 
-public fun bag_mut<T: drop>(self: &mut PriceOracle, _: T): &mut Bag {
-    self.assert_extension_is_enabled!<T>();
+public fun bag_mut<Ext: drop>(self: &mut PriceOracle, _: Ext): &mut Bag {
+    self.assert_extension_is_enabled!<Ext>();
 
-    &mut self.extension_mut!<T>().bag
+    &mut self.extension_mut!<Ext>().bag
 }
 
-public fun add_feed<T: drop, Feed>(self: &mut PriceOracle, _: T) {
-    self.assert_extension_is_enabled!<T>();
+public fun add_feed<Ext: drop, Feed>(self: &mut PriceOracle, _: Ext) {
+    self.assert_extension_is_enabled!<Ext>();
 
     self.add_feed_internal!<Feed>();
 }
 
-public fun remove_feed<T: drop, Feed>(self: &mut PriceOracle, _: T) {
-    self.assert_extension_is_enabled!<T>();
+public fun remove_feed<Ext: drop, Feed>(self: &mut PriceOracle, _: Ext) {
+    self.assert_extension_is_enabled!<Ext>();
 
     self.remove_feed_internal!<Feed>();
 }
 
-public fun update_time_buffer_ms<T: drop>(self: &mut PriceOracle, _: T, time_buffer_ms: u64) {
-    self.assert_extension_is_enabled!<T>();
+public fun update_time_buffer_ms<Ext: drop>(self: &mut PriceOracle, _: Ext, time_buffer_ms: u64) {
+    self.assert_extension_is_enabled!<Ext>();
 
     self.update_time_buffer_ms_internal!(time_buffer_ms);
 }
 
-public fun update_deviation<T: drop>(self: &mut PriceOracle, _: T, deviation: u128) {
-    self.assert_extension_is_enabled!<T>();
+public fun update_deviation<Ext: drop>(self: &mut PriceOracle, _: Ext, deviation: u128) {
+    self.assert_extension_is_enabled!<Ext>();
 
     self.update_deviation_internal!(deviation);
 }
@@ -304,22 +304,22 @@ macro fun fixed18_diff($a: Fixed18, $b: Fixed18): Fixed18 {
     }
 }
 
-macro fun assert_extension_is_enabled<$T>($self: &PriceOracle) {
+macro fun assert_extension_is_enabled<$Ext>($self: &PriceOracle) {
     let self = $self;
     assert!(
-        self.extension!<$T>().is_enabled,
+        self.extension!<$Ext>().is_enabled,
         interest_price_oracle::oracle_errors::extension_not_enabled!(),
     );
 }
 
-macro fun extension<$T>($self: &PriceOracle): &Extension {
+macro fun extension<$Ext>($self: &PriceOracle): &Extension {
     let self = $self;
-    df::borrow(&self.id, ExtensionKey<$T>())
+    df::borrow(&self.id, ExtensionKey<$Ext>())
 }
 
-macro fun extension_mut<$T>($self: &mut PriceOracle): &mut Extension {
+macro fun extension_mut<$Ext>($self: &mut PriceOracle): &mut Extension {
     let self = $self;
-    df::borrow_mut(&mut self.id, ExtensionKey<$T>())
+    df::borrow_mut(&mut self.id, ExtensionKey<$Ext>())
 }
 
 // === Constants ===
