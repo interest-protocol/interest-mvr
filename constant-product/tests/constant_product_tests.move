@@ -29,43 +29,78 @@ fun test_get_amount_out() {
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::ENoZeroCoin,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_in_zero_coin_amount() {
     assert_eq(constant_product::get_amount_in!(0, 75, 150), 0);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::EInsufficientLiquidity,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_in_zero_balance_in() {
     assert_eq(constant_product::get_amount_in!(10, 0, 50), 3);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::EInsufficientLiquidity,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_in_zero_balance_out() {
     assert_eq(constant_product::get_amount_in!(10, 50, 0), 3);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::EInsufficientLiquidity,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_in_coin_out_equal_to_balance_out() {
     assert_eq(constant_product::get_amount_in!(25, 200, 25), 3);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::EInsufficientLiquidity,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_out_zero_balance_in() {
     assert_eq(constant_product::get_amount_out!(10, 0, 150), 3);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::ENoZeroCoin,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_out_zero_coin_amount() {
     assert_eq(constant_product::get_amount_out!(0, 75, 150), 0);
 }
 
 #[test]
-#[expected_failure]
+#[
+    expected_failure(
+        abort_code = interest_constant_product::constant_product_errors::EInsufficientLiquidity,
+        location = interest_constant_product::constant_product_tests,
+    ),
+]
 fun test_get_amount_out_zero_balance_out() {
     assert_eq(constant_product::get_amount_out!(10, 150, 0), 3);
 }
