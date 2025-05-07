@@ -16,6 +16,7 @@ These functions are essential for implementing decentralized exchanges and liqui
 
 -   constant_product: Contains the core mathematical functions for constant product calculations
 -   errors: Contains all error codes thrown by the package
+-   constant_product_tests: Contains the tests for the `constant_product`.
 
 ## Installing
 
