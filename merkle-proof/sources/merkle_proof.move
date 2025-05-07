@@ -49,7 +49,11 @@ public macro fun verify_with_index(
 
 // === Private Functions ===
 
-public macro fun process_proof($proof: vector<vector<u8>>, $leaf: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+public macro fun process_proof(
+    $proof: vector<vector<u8>>,
+    $leaf: vector<u8>,
+    $hash: |vector<u8>| -> vector<u8>,
+): vector<u8> {
     let proof = $proof;
     let leaf = $leaf;
 
@@ -58,13 +62,21 @@ public macro fun process_proof($proof: vector<vector<u8>>, $leaf: vector<u8>, $h
     })
 }
 
-public macro fun hash_pair($a: vector<u8>, $b: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+public macro fun hash_pair(
+    $a: vector<u8>,
+    $b: vector<u8>,
+    $hash: |vector<u8>| -> vector<u8>,
+): vector<u8> {
     let a = $a;
     let b = $b;
     if (a.lt(b)) efficient_hash!(a, b, $hash) else efficient_hash!(b, a, $hash)
 }
 
-public macro fun efficient_hash($a: vector<u8>, $b: vector<u8>, $hash: |vector<u8>| -> vector<u8>): vector<u8> {
+public macro fun efficient_hash(
+    $a: vector<u8>,
+    $b: vector<u8>,
+    $hash: |vector<u8>| -> vector<u8>,
+): vector<u8> {
     let mut a = $a;
     a.append($b);
     $hash(a)
