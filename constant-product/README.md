@@ -45,9 +45,9 @@ network = "mainnet"
 
 ### Package Ids
 
-The package is deployed on Sui Network mainnet at: [0x9c142049e44dbfebeb0e75199ed6b81dcfb629fb4044b85d1711d0511e1c17ee](https://suiscan.xyz/testnet/object/0x9c142049e44dbfebeb0e75199ed6b81dcfb629fb4044b85d1711d0511e1c17ee/contracts)
+The package is deployed on Sui Network mainnet at: [0x32c8ce857be1e93ebff6d6b460868ad450d7f18f0e2769c122c49d0f632e5f9b](https://suiscan.xyz/mainnet/object/0x32c8ce857be1e93ebff6d6b460868ad450d7f18f0e2769c122c49d0f632e5f9b/contracts)
 
-The package is deployed on Sui Network testnet at: [0x32c8ce857be1e93ebff6d6b460868ad450d7f18f0e2769c122c49d0f632e5f9b](https://suiscan.xyz/mainnet/object/0x32c8ce857be1e93ebff6d6b460868ad450d7f18f0e2769c122c49d0f632e5f9b/contracts)
+The package is deployed on Sui Network testnet at: [0x9c142049e44dbfebeb0e75199ed6b81dcfb629fb4044b85d1711d0511e1c17ee](https://suiscan.xyz/testnet/object/0x9c142049e44dbfebeb0e75199ed6b81dcfb629fb4044b85d1711d0511e1c17ee/contracts)
 
 ### How to use
 
