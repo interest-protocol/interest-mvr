@@ -57,15 +57,15 @@ module my::awesome_project;
 use interest_constant_product::constant_product;
 
 public fun calculate_k(x: u64, y: u64): u128 {
-    constant_product::k(x, y)
+    constant_product::k!(x, y)
 }
 
 public fun get_input_amount(amount_out: u64, reserve_in: u64, reserve_out: u64): u64 {
-    constant_product::get_amount_in(amount_out, reserve_in, reserve_out)
+    constant_product::get_amount_in!(amount_out, reserve_in, reserve_out)
 }
 
 public fun get_output_amount(amount_in: u64, reserve_in: u64, reserve_out: u64): u64 {
-    constant_product::get_amount_out(amount_in, reserve_in, reserve_out)
+    constant_product::get_amount_out!(amount_in, reserve_in, reserve_out)
 }
 ```
 
@@ -93,10 +93,10 @@ public macro fun get_amount_out(coin_in_amount: u64, balance_in: u64, balance_ou
 
 Errors are encoded in u64.
 
-| Error code | Reason                             |
-| ---------- | ---------------------------------- |
-| 0          | Insufficient liquidity in the pool |
-| 1          | Attempted to use zero amount       |
+| Error code | Reason                                                                      |
+| ---------- | --------------------------------------------------------------------------- |
+| 0          | Insufficient liquidity in the pool or one of the reserves is equal to zero. |
+| 1          | Attempted to calculate an output from a zero value input                    |
 
 ## Disclaimer
 
