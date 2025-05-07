@@ -15,7 +15,8 @@ use interest_math::fixed18::{
     add,
     sub,
     try_add,
-    try_sub
+    try_sub,
+    diff,
 };
 use sui::test_utils::assert_eq;
 
@@ -39,6 +40,12 @@ fun test_add() {
 #[test]
 fun test_sub() {
     assert_eq(sub(5u256.from_raw(), 3u256.from_raw()).raw_value(), 2);
+}
+
+#[test]
+fun test_diff() {
+    assert_eq(diff(5u256.from_raw(), 3u256.from_raw()).raw_value(), 2);
+    assert_eq(diff(3u256.from_raw(), 5u256.from_raw()).raw_value(), 2);
 }
 
 #[test]
