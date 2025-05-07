@@ -421,6 +421,8 @@ fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, no
 
         reward_data.accrued_rewards_per_share = accrued_rewards_per_share;
         reward_data.rewards = reward_data.rewards - (reward as u64);
+
+        if (reward_data.rewards == 0) reward_data.rewards_per_second = 0;
     };
 }
 

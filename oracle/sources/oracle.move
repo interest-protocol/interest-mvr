@@ -94,7 +94,7 @@ public fun destroy_request(request: Request, oracle: &PriceOracle, clock: &Clock
             interest_price_oracle::oracle_errors::price_is_stale!(),
         );
 
-        let deviation = leader_price.diff!(report.price).div_up(leader_price);
+        let deviation = leader_price.diff(report.price).div_up(leader_price);
         assert!(
             deviation.lte(oracle.deviation),
             interest_price_oracle::oracle_errors::price_deviation_too_high!(),
@@ -294,16 +294,6 @@ macro fun assert_is_admin<$Admin>($self: &PriceOracle) {
     );
 }
 
-macro fun fixed18_diff($a: Fixed18, $b: Fixed18): Fixed18 {
-    let a = $a;
-    let b = $b;
-    if (a.gte(b)) {
-        a.sub(b)
-    } else {
-        b.sub(a)
-    }
-}
-
 macro fun assert_extension_is_enabled<$Ext>($self: &PriceOracle) {
     let self = $self;
     assert!(
@@ -330,7 +320,6 @@ macro fun decimals(): u8 {
 
 // === Aliases ===
 
-use fun fixed18_diff as Fixed18.diff;
 use fun fixed18::u128_to_fixed18 as u128.to_fixed18;
 
 public use fun price_asset as Price.asset;
