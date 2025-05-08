@@ -327,3 +327,22 @@ public use fun price_value as Price.value;
 public use fun price_oracle as Price.oracle;
 public use fun price_decimals as Price.decimals;
 public use fun price_timestamp_ms as Price.timestamp_ms;
+
+// === Test Only Functions ===
+
+#[test_only]
+public fun price_for_testing(
+    oracle: address,
+    asset: TypeName,
+    value: u256,
+    decimals: u8,
+    timestamp_ms: u64,
+): Price {
+    Price {
+        oracle,
+        asset,
+        value,
+        decimals,
+        timestamp_ms,
+    }
+}

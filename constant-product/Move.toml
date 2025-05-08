@@ -8,5 +8,3 @@ authors = ["Jose Cerqueira (jose@interestprotocol.com)"]
 
 [addresses]
 interest_constant_product = "0x0"
-
-
