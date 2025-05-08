@@ -1,0 +1,14 @@
+[package]
+name = "InterestExchangeRate"
+edition = "2024.beta" 
+license = "Apache-2.0"            
+authors = ["Jose Cerqueira (jose@interestprotocol.com)"]  
+
+[dependencies]
+interest_math = { r.mvr = "@interest/math" }
+
+[addresses]
+interest_exchange_rate = "0x0"
+
+[r.mvr]
+network = "testnet"
