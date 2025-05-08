@@ -32,12 +32,12 @@ public fun add_shares(self: &mut ExchangeRate, shares: u256) {
     self.shares = self.shares + shares;
 }
 
-public fun sub_shares(self: &mut ExchangeRate, shares: u256) {
-    self.shares = self.shares - shares;
+public fun sub_assets(self: &mut ExchangeRate, assets: u256) {
+    self.assets = self.assets - assets;
 }
 
-public fun sub_virtual_shares(self: &mut ExchangeRate, virtual_shares: u256) {
-    self.virtual_shares = self.virtual_shares - virtual_shares;
+public fun sub_shares(self: &mut ExchangeRate, shares: u256) {
+    self.shares = self.shares - shares;
 }
 
 // === Public View Functions ===
