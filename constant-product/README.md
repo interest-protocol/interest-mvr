@@ -100,6 +100,12 @@ Errors are encoded in u64.
 | 0          | Insufficient liquidity in the pool or one of the reserves is equal to zero. |
 | 1          | Attempted to calculate an output from a zero value input                    |
 
+## Changelog
+
+### Commit - 8d2da8a1c9ed2682e3f5a18dc8959879607db50b
+
+Deploys version 2 of the Constant product package to fix a critical error due to visibility of the error macro functions.
+
 ## Disclaimer
 
 This is provided on an "as is" and "as available" basis.
