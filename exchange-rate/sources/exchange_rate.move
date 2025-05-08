@@ -7,16 +7,24 @@ use interest_math::u256;
 public struct ExchangeRate has copy, drop, store {
     assets: u256,
     shares: u256,
-    virtual_shares: u256
+    virtual_shares: u256,
 }
 
-// === Public Mutation Functions === 
+// === Public Mutation Functions ===
 
 public fun new(virtual_shares: u256): ExchangeRate {
     ExchangeRate {
         assets: 0,
         shares: 0,
-        virtual_shares
+        virtual_shares,
+    }
+}
+
+public fun new_with_values(assets: u256, shares: u256, virtual_shares: u256): ExchangeRate {
+    ExchangeRate {
+        assets,
+        shares,
+        virtual_shares,
     }
 }
 
@@ -70,7 +78,7 @@ public fun to_assets_up(self: ExchangeRate, shares: u256): u256 {
     u256::mul_div_up(shares, self.assets + virtual_assets!(), self.shares + self.virtual_shares)
 }
 
-// === Constants === 
+// === Constants ===
 
 public macro fun virtual_assets(): u256 {
     1
