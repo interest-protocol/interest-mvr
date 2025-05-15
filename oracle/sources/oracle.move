@@ -1,6 +1,5 @@
 module interest_price_oracle::price_oracle;
 
-use interest_access_control::access_control::AdminWitness;
 use interest_math::fixed18::{Self, Fixed18};
 use std::type_name::{Self, TypeName};
 use sui::{bag::{Self, Bag}, clock::Clock, dynamic_field as df, vec_set::{Self, VecSet}};
@@ -132,28 +131,71 @@ public fun price_timestamp_ms(price: &Price): u64 {
     price.timestamp_ms
 }
 
-// === Extension Functions ===
+// === Admin Functions ===
 
-public fun new<Asset, Ext: drop>(_: Ext, ctx: &mut TxContext): PriceOracle {
-    let mut price_oracle = PriceOracle {
+public fun new<Asset, Admin: drop>(_: &Admin, ctx: &mut TxContext): PriceOracle {
+    PriceOracle {
         id: object::new(ctx),
         feeds: vec_set::empty(),
         time_buffer_ms: 0,
         deviation: fixed18::from_raw_u128(0),
         asset: type_name::get<Asset>(),
-        admin: option::none(),
-    };
+        admin: option::some(type_name::get<Admin>()),
+    }
+}
+
+public fun add_feed<Feed, Admin: drop>(self: &mut PriceOracle, _: &Admin, _: &mut TxContext) {
+    self.assert_admin!<Admin>();
+
+    self.feeds.insert(type_name::get<Feed>());
+}
+
+public fun remove_feed<Feed, Admin: drop>(self: &mut PriceOracle, _: &Admin, _: &mut TxContext) {
+    self.assert_admin!<Admin>();
+
+    self.feeds.remove(&type_name::get<Feed>());
+}
+
+public fun update_time_buffer_ms<Admin: drop>(
+    self: &mut PriceOracle,
+    _: &Admin,
+    time_buffer_ms: u64,
+    _: &mut TxContext,
+) {
+    self.assert_admin!<Admin>();
+
+    assert!(time_buffer_ms != 0, interest_price_oracle::oracle_errors::invalid_time_buffer_ms!());
+    self.time_buffer_ms = time_buffer_ms;
+}
+
+public fun update_deviation<Admin: drop>(
+    self: &mut PriceOracle,
+    _: &Admin,
+    deviation: u128,
+    _: &mut TxContext,
+) {
+    self.assert_admin!<Admin>();
+
+    assert!(deviation != 0, interest_price_oracle::oracle_errors::invalid_deviation!());
+    self.deviation = fixed18::from_raw_u128(deviation);
+}
+
+public fun add_extension<Admin: drop, Ext: drop>(
+    self: &mut PriceOracle,
+    _: &Admin,
+    _: Ext,
+    ctx: &mut TxContext,
+) {
+    self.assert_admin!<Admin>();
 
     df::add(
-        &mut price_oracle.id,
+        &mut self.id,
         ExtensionKey<Ext>(),
         Extension {
             bag: bag::new(ctx),
             is_enabled: true,
         },
-    );
-
-    price_oracle
+    )
 }
 
 public fun remove_extension<Ext: drop>(self: &mut PriceOracle, _: Ext) {
@@ -179,114 +221,9 @@ public fun bag_mut<Ext: drop>(self: &mut PriceOracle, _: Ext): &mut Bag {
     &mut self.extension_mut!<Ext>().bag
 }
 
-public fun add_feed<Ext: drop, Feed>(self: &mut PriceOracle, _: Ext) {
-    self.assert_extension_is_enabled!<Ext>();
-
-    self.add_feed_internal!<Feed>();
-}
-
-public fun remove_feed<Ext: drop, Feed>(self: &mut PriceOracle, _: Ext) {
-    self.assert_extension_is_enabled!<Ext>();
-
-    self.remove_feed_internal!<Feed>();
-}
-
-public fun update_time_buffer_ms<Ext: drop>(self: &mut PriceOracle, _: Ext, time_buffer_ms: u64) {
-    self.assert_extension_is_enabled!<Ext>();
-
-    self.update_time_buffer_ms_internal!(time_buffer_ms);
-}
-
-public fun update_deviation<Ext: drop>(self: &mut PriceOracle, _: Ext, deviation: u128) {
-    self.assert_extension_is_enabled!<Ext>();
-
-    self.update_deviation_internal!(deviation);
-}
-
-// === Admin Functions ===
-
-public fun admin_new<Asset, Admin>(_: &AdminWitness<Admin>, ctx: &mut TxContext): PriceOracle {
-    PriceOracle {
-        id: object::new(ctx),
-        feeds: vec_set::empty(),
-        time_buffer_ms: 0,
-        deviation: fixed18::from_raw_u128(0),
-        asset: type_name::get<Asset>(),
-        admin: option::some(type_name::get<Admin>()),
-    }
-}
-
-public fun admin_add_feed<Feed, Admin>(
-    self: &mut PriceOracle,
-    _: &AdminWitness<Admin>,
-    _: &mut TxContext,
-) {
-    self.assert_is_admin!<Admin>();
-
-    self.add_feed_internal!<Feed>();
-}
-
-public fun admin_remove_feed<Feed, Admin>(
-    self: &mut PriceOracle,
-    _: &AdminWitness<Admin>,
-    _: &mut TxContext,
-) {
-    self.assert_is_admin!<Admin>();
-
-    self.remove_feed_internal!<Feed>();
-}
-
-public fun admin_update_time_buffer_ms<Admin>(
-    self: &mut PriceOracle,
-    _: &AdminWitness<Admin>,
-    time_buffer_ms: u64,
-    _: &mut TxContext,
-) {
-    self.assert_is_admin!<Admin>();
-
-    self.update_time_buffer_ms_internal!(time_buffer_ms);
-}
-
-public fun admin_update_deviation<Admin>(
-    self: &mut PriceOracle,
-    _: &AdminWitness<Admin>,
-    deviation: u128,
-    _: &mut TxContext,
-) {
-    self.assert_is_admin!<Admin>();
-
-    self.update_deviation_internal!(deviation);
-}
-
 // === Private Functions ===
 
-macro fun add_feed_internal<$Feed>($self: &mut PriceOracle) {
-    let self = $self;
-    self.feeds.insert(type_name::get<$Feed>());
-}
-
-macro fun remove_feed_internal<$Feed>($self: &mut PriceOracle) {
-    let self = $self;
-    self.feeds.remove(&type_name::get<$Feed>());
-}
-
-macro fun update_time_buffer_ms_internal($self: &mut PriceOracle, $time_buffer_ms: u64) {
-    let self = $self;
-    let time_buffer_ms = $time_buffer_ms;
-
-    assert!(time_buffer_ms != 0, interest_price_oracle::oracle_errors::invalid_time_buffer_ms!());
-    self.time_buffer_ms = time_buffer_ms;
-}
-
-macro fun update_deviation_internal($self: &mut PriceOracle, $deviation: u128) {
-    let self = $self;
-    let deviation = $deviation;
-
-    assert!(deviation != 0, interest_price_oracle::oracle_errors::invalid_deviation!());
-    self.deviation = fixed18::from_raw_u128(deviation);
-}
-
-macro fun assert_is_admin<$Admin>($self: &PriceOracle) {
+macro fun assert_admin<$Admin>($self: &PriceOracle) {
     let self = $self;
     assert!(
         *self.admin.borrow() == type_name::get<$Admin>(),
