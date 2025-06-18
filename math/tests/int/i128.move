@@ -428,6 +428,26 @@ fun test_wrapping_sub() {
     assert_eq(i128::min().wrapping_sub(from_u128(1)), i128::max());
 }
 
+#[test, expected_failure(abort_code = i128::EInvalidOp, location = i128)]
+fun test_add_overflow() {
+    i128::max().add(from_u128(1));
+}
+
+#[test, expected_failure(abort_code = i128::EInvalidOp, location = i128)]
+fun test_add_underflow() {
+    i128::min().add(negative_from_u128(1));
+}
+
+#[test, expected_failure(abort_code = i128::EInvalidOp, location = i128)]
+fun test_sub_overflow() {
+    i128::max().sub(negative_from_u128(1));
+}
+
+#[test, expected_failure(abort_code = i128::EInvalidOp, location = i128)]
+fun test_sub_underflow() {
+    i128::min().sub(from_u128(1));
+}
+
 #[test, expected_failure(abort_code = i128::EDivByZero, location = i128)]
 fun test_mod_by_zero() {
     mod(from_u128(123), zero());

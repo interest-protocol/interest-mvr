@@ -20,6 +20,8 @@ const EDivByZero: u64 = 2;
 
 const EInvalidBitShift: u64 = 3;
 
+const EInvalidOp: u64 = 4;
+
 // === Structs ===
 
 public enum Compare has copy, drop, store {
@@ -112,7 +114,7 @@ public fun is_zero(self: I32): bool {
 
 public fun abs(self: I32): I32 {
     if (self.is_negative()) {
-        assert!(self.value > MIN_NEGATIVE, EUnderflow);
+        assert!(self.value > MIN_NEGATIVE, EOverflow);
         I32 { value: not_u32(self.value - 1) }
     } else {
         self
@@ -142,11 +144,11 @@ public fun gte(self: I32, other: I32): bool {
 }
 
 public fun add(self: I32, other: I32): I32 {
-    macro::add!(self, other, EOverflow)
+    macro::add!(self, other, EInvalidOp)
 }
 
 public fun sub(self: I32, other: I32): I32 {
-    self.add(I32 { value: not_u32(other.value) }.wrapping_add(from_u32(1)))
+    macro::sub!(self, other, EInvalidOp)
 }
 
 public fun mul(self: I32, other: I32): I32 {

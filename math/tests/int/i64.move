@@ -404,6 +404,26 @@ fun test_wrapping_sub() {
     assert_eq(i64::min().wrapping_sub(from_u64(1)), i64::max());
 }
 
+#[test, expected_failure(abort_code = i64::EInvalidOp, location = i64)]
+fun test_add_overflow() {
+    i64::max().add(from_u64(1));
+}
+
+#[test, expected_failure(abort_code = i64::EInvalidOp, location = i64)]
+fun test_add_underflow() {
+    i64::min().add(negative_from_u64(1));
+}
+
+#[test, expected_failure(abort_code = i64::EInvalidOp, location = i64)]
+fun test_sub_overflow() {
+    i64::max().sub(negative_from_u64(1));
+}
+
+#[test, expected_failure(abort_code = i64::EInvalidOp, location = i64)]
+fun test_sub_underflow() {
+    i64::min().sub(from_u64(1));
+}
+
 #[test, expected_failure(abort_code = i64::EDivByZero, location = i64)]
 fun test_mod_by_zero() {
     mod(from_u64(123), zero());

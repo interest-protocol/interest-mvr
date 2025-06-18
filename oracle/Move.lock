@@ -2,11 +2,10 @@
 
 [move]
 version = 3
-manifest_digest = "D52AA462275B55D5F4FD95FC02917AC11E28EE0294165AEC3AEC0E35FBA42596"
-deps_digest = "52B406A7A21811BEF51751CF88DA0E76DAEFFEAC888D4F4060B1A72BBE7D8D35"
+manifest_digest = "373689520DC48F1F25A14AE469A343F2AA282E71FEC39F25809324861C5D1DEF"
+deps_digest = "397E6A9F7A624706DBDFEE056CE88391A15876868FD18A88504DA74EB458D697"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
-  { id = "InterestAccessControl", name = "InterestAccessControl" },
   { id = "InterestMath", name = "InterestMath" },
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
@@ -30,18 +29,6 @@ source = { git = "https://github.com/MystenLabs/sui.git", rev = "9c04e1840eb5", 
 dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
   { id = "Sui", name = "Sui" },
-]
-
-[[move.package]]
-id = "InterestAccessControl"
-source = { git = "https://github.com/interest-protocol/interest-mvr", rev = "937409aa6920904b6d16bf5cafff0f9f32904ba4", subdir = "access-control/contracts" }
-
-dependencies = [
-  { id = "Bridge", name = "Bridge" },
-  { id = "DeepBook", name = "DeepBook" },
-  { id = "MoveStdlib", name = "MoveStdlib" },
-  { id = "Sui", name = "Sui" },
-  { id = "SuiSystem", name = "SuiSystem" },
 ]
 
 [[move.package]]

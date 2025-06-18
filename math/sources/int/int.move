@@ -34,3 +34,15 @@ public(package) macro fun add($self: _, $other: _, $error: u64): _ {
 
     sum
 }
+
+public(package) macro fun sub($self: _, $other: _, $error: u64): _ {
+    let self = $self;
+    let other = $other;
+    let error = $error;
+
+    let diff = self.wrapping_sub(other);
+    let overflow = self.sign() != other.sign() && self.sign() != diff.sign();
+    assert!(!overflow, error);
+
+    diff
+}

@@ -160,12 +160,12 @@ fun test_add() {
     assert_eq(from_u32(123).add(from_u32(0)), from_u32(123));
 }
 
-#[test, expected_failure(abort_code = i32::EOverflow, location = i32)]
+#[test, expected_failure(abort_code = i32::EInvalidOp, location = i32)]
 fun test_add_overflow() {
     i32::max().add(from_u32(1));
 }
 
-#[test, expected_failure(abort_code = i32::EOverflow, location = i32)]
+#[test, expected_failure(abort_code = i32::EInvalidOp, location = i32)]
 fun test_add_underflow() {
     i32::min().add(negative_from(1));
 }
@@ -215,12 +215,12 @@ fun test_sub() {
     );
 }
 
-#[test, expected_failure(abort_code = i32::EOverflow, location = i32)]
+#[test, expected_failure(abort_code = i32::EInvalidOp, location = i32)]
 fun test_sub_overflow() {
     i32::max().sub(negative_from(1));
 }
 
-#[test, expected_failure(abort_code = i32::EOverflow, location = i32)]
+#[test, expected_failure(abort_code = i32::EInvalidOp, location = i32)]
 fun test_sub_underflow() {
     i32::min().sub(from_u32(1));
 }

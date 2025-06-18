@@ -526,6 +526,26 @@ fun test_ln() {
     assert_eq(i256::from_u256(u256::pow(2, 128)).ln().value(), 47276307437780177293);
 }
 
+#[test, expected_failure(abort_code = i256::EInvalidOp, location = i256)]
+fun test_add_overflow() {
+    i256::max().add(from_u256(1));
+}
+
+#[test, expected_failure(abort_code = i256::EInvalidOp, location = i256)]
+fun test_add_underflow() {
+    i256::min().add(negative_from_u256(1));
+}
+
+#[test, expected_failure(abort_code = i256::EInvalidOp, location = i256)]
+fun test_sub_overflow() {
+    i256::max().sub(negative_from_u256(1));
+}
+
+#[test, expected_failure(abort_code = i256::EInvalidOp, location = i256)]
+fun test_sub_underflow() {
+    i256::min().sub(from_u256(1));
+}
+
 #[test, expected_failure(abort_code = i256::EDivByZero, location = i256)]
 fun test_mod_by_zero() {
     mod(from_u256(256), zero());
