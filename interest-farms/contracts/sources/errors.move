@@ -48,3 +48,10 @@ const EInvalidAdmin: u64 = 6;
 public(package) macro fun invalid_admin(): u64 {
     6
 }
+
+#[test_only]
+const EInvalidEndTimestamp: u64 = 7;
+
+public(package) macro fun invalid_end_timestamp(): u64 {
+    7
+}

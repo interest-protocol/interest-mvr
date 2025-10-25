@@ -7,7 +7,6 @@ authors = ["Jose Cerqueira (jose@interestprotocol.com)"]
 [dependencies]
 interest_access_control = { r.mvr = "@interest/acl" }
 
-
 [addresses]
 interest_farms = "0x0"
 

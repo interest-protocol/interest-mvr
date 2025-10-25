@@ -58,6 +58,12 @@ public struct SetRewardsPerSecond has copy, drop {
     new_rewards_per_second: u64,
 }
 
+public struct SetEndTime has copy, drop {
+    farm: address,
+    reward: TypeName,
+    end: u64,
+}
+
 // === Package Functions ===
 
 public(package) fun emit_new_account(farm: address, account: address) {
@@ -122,4 +128,12 @@ public(package) fun emit_set_rewards_per_second(
             new_rewards_per_second,
         }),
     );
+}
+
+public(package) fun emit_set_end_time(
+    farm: address,
+    reward: TypeName,
+    end: u64,
+) {
+    emit(InterestFarmEvent(SetEndTime { farm, reward, end }));
 }

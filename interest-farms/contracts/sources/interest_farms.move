@@ -7,6 +7,7 @@ use sui::{
     balance::{Self, Balance},
     clock::Clock,
     coin::{CoinMetadata, Coin},
+    coin_registry::Currency,
     dynamic_field as df,
     vec_map::{Self, VecMap}
 };
@@ -15,7 +16,10 @@ use sui::{
 
 public struct RewardBalance(TypeName) has copy, drop, store;
 
+public struct Decimals(u8) has copy, drop, store;
+
 public struct RewardData has copy, drop, store {
+    end: u64,
     rewards: u64,
     rewards_per_second: u64,
     last_reward_timestamp: u64,
@@ -40,7 +44,6 @@ public struct InterestFarm<phantom Stake> has key, store {
     reward_data: VecMap<TypeName, RewardData>,
     total_stake_amount: u64,
     precision: u256,
-    start_timestamp: u64,
     paused: bool,
     admin_type: TypeName,
 }
@@ -114,7 +117,7 @@ public fun stake<Stake>(
         account.id.to_address(),
         deposit_value,
         farm.total_stake_amount,
-        type_name::get<Stake>(),
+        type_name::with_defining_ids<Stake>(),
     );
 }
 
@@ -140,7 +143,7 @@ public fun unstake<Stake>(
         account.id.to_address(),
         amount,
         farm.total_stake_amount,
-        type_name::get<Stake>(),
+        type_name::with_defining_ids<Stake>(),
     );
 
     unstake_coin
@@ -159,7 +162,7 @@ public fun harvest<Stake, Reward>(
 
     account.update_reward_debt(farm);
 
-    let reward_name = type_name::get<Reward>();
+    let reward_name = type_name::with_defining_ids<Reward>();
 
     let account_reward = &mut account.rewards[&reward_name];
 
@@ -192,7 +195,7 @@ public fun add_reward<Stake, Reward>(
     clock: &Clock,
     reward: Coin<Reward>,
 ) {
-    let reward_name = type_name::get<Reward>();
+    let reward_name = type_name::with_defining_ids<Reward>();
 
     farm.update(clock);
 
@@ -207,29 +210,31 @@ public fun add_reward<Stake, Reward>(
     farm.balance_mut(reward_name).join(reward.into_balance());
 }
 
+// === Utility Functions ===
+
+public fun coin_metadata_decimals<Stake>(coin_metadata: &CoinMetadata<Stake>): Decimals {
+    Decimals(coin_metadata.get_decimals())
+}
+
+public fun currency_decimals<Stake>(currency: &Currency<Stake>): Decimals {
+    Decimals(currency.decimals())
+}
+
 // === Admin Functions ===
 
 public fun request_new_farm<Stake, Admin>(
-    clock: &Clock,
-    coin_metadata: &CoinMetadata<Stake>,
+    decimals: Decimals,
     _: &AdminWitness<Admin>,
-    start_timestamp: u64,
     ctx: &mut TxContext,
 ): NewFarmRequest<Stake> {
-    assert!(
-        start_timestamp >= clock.timestamp_ms(),
-        interest_farms::interest_farm_errors::invalid_timestamp!(),
-    );
-
     let farm = InterestFarm<Stake> {
         id: object::new(ctx),
         rewards: vector[],
         reward_data: vec_map::empty(),
         total_stake_amount: 0,
-        precision: 10u256.pow(coin_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
-        start_timestamp,
+        precision: 10u256.pow(decimals.0) * interest_farms::interest_farm_constants::pow_10_9!(),
         paused: false,
-        admin_type: type_name::get<Admin>(),
+        admin_type: type_name::with_defining_ids<Admin>(),
     };
 
     NewFarmRequest {
@@ -241,7 +246,7 @@ public fun register_reward<Stake, Reward>(
     request: &mut NewFarmRequest<Stake>,
     _ctx: &mut TxContext,
 ) {
-    let reward_name = type_name::get<Reward>();
+    let reward_name = type_name::with_defining_ids<Reward>();
 
     df::add<RewardBalance, Balance<Reward>>(
         &mut request.farm.id,
@@ -267,6 +272,31 @@ public fun new_farm<Stake>(
     farm
 }
 
+public fun set_end_time<Stake, Reward, Admin>(
+    farm: &mut InterestFarm<Stake>,
+    clock: &Clock,
+    _: &AdminWitness<Admin>,
+    end: u64,
+) {
+    farm.assert_is_admin<_, Admin>();
+
+    farm.update(clock);
+
+    assert!(
+        end >= clock.timestamp_ms(),
+        interest_farms::interest_farm_errors::invalid_end_timestamp!(),
+    );
+
+    let farm_reward_data = &mut farm.reward_data[&type_name::with_defining_ids<Reward>()];
+    farm_reward_data.end = end;
+
+    interest_farm_events::emit_set_end_time(
+        farm.id.to_address(),
+        type_name::with_defining_ids<Reward>(),
+        end,
+    );
+}
+
 public fun set_rewards_per_second<Stake, Reward, Admin>(
     farm: &mut InterestFarm<Stake>,
     clock: &Clock,
@@ -277,12 +307,12 @@ public fun set_rewards_per_second<Stake, Reward, Admin>(
 
     farm.update(clock);
 
-    let farm_reward_data = &mut farm.reward_data[&type_name::get<Reward>()];
+    let farm_reward_data = &mut farm.reward_data[&type_name::with_defining_ids<Reward>()];
     farm_reward_data.rewards_per_second = new_rewards_per_second;
 
     interest_farm_events::emit_set_rewards_per_second(
         farm.id.to_address(),
-        type_name::get<Reward>(),
+        type_name::with_defining_ids<Reward>(),
         farm_reward_data.rewards_per_second,
         new_rewards_per_second,
     );
@@ -308,7 +338,7 @@ fun assert_is_live<Stake>(farm: &InterestFarm<Stake>) {
 
 fun assert_is_admin<Stake, Admin>(farm: &InterestFarm<Stake>) {
     assert!(
-        farm.admin_type == type_name::get<Admin>(),
+        farm.admin_type == type_name::with_defining_ids<Admin>(),
         interest_farms::interest_farm_errors::invalid_admin!(),
     );
 }
@@ -323,22 +353,23 @@ fun assert_belongs_to_farm<Stake>(
     );
 }
 
+#[allow(unused_function)]
 fun pending_rewards<Stake, Reward>(
     account: &InterestFarmAccount<Stake>,
     farm: &InterestFarm<Stake>,
     clock: &Clock,
 ): u64 {
-    let reward_name = type_name::get<Reward>();
-
-    let now = clock.now();
+    let reward_name = type_name::with_defining_ids<Reward>();
 
     let reward_data = &farm.reward_data[&reward_name];
 
-    let pred = farm.total_stake_amount == 0 || farm.start_timestamp > now;
+    let end_time = reward_data.end.min(clock.now());
 
     let rewards_available = farm.balance<_, Reward>(reward_name).value();
 
-    let accrued_rewards_per_share = if (pred) {
+    let accrued_rewards_per_share = if (
+        farm.total_stake_amount == 0 || reward_data.last_reward_timestamp >= end_time
+    ) {
         reward_data.accrued_rewards_per_share
     } else {
         let (accrued_rewards_per_share, _) = calculate_accrued_rewards(
@@ -347,7 +378,7 @@ fun pending_rewards<Stake, Reward>(
             farm.total_stake_amount,
             reward_data.rewards,
             farm.precision,
-            now - reward_data.last_reward_timestamp,
+            end_time - reward_data.last_reward_timestamp,
         );
 
         accrued_rewards_per_share
@@ -406,17 +437,19 @@ fun update_with_account<Stake>(
 fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, now: u64) {
     let reward_data = &mut farm.reward_data[&reward_name];
 
-    let prev_reward_time_stamp = reward_data.last_reward_timestamp;
-    reward_data.last_reward_timestamp = now;
+    let end_time = reward_data.end.min(now);
 
-    if (farm.total_stake_amount != 0 && now > farm.start_timestamp) {
+    let prev_reward_time_stamp = reward_data.last_reward_timestamp;
+    reward_data.last_reward_timestamp = end_time;
+
+    if (farm.total_stake_amount != 0 && prev_reward_time_stamp < end_time) {
         let (accrued_rewards_per_share, reward) = calculate_accrued_rewards(
             reward_data.rewards_per_second,
             reward_data.accrued_rewards_per_share,
             farm.total_stake_amount,
             reward_data.rewards,
             farm.precision,
-            now - prev_reward_time_stamp,
+            end_time - prev_reward_time_stamp,
         );
 
         reward_data.accrued_rewards_per_share = accrued_rewards_per_share;
@@ -497,6 +530,7 @@ fun default_reward_data(): RewardData {
         rewards_per_second: 0,
         last_reward_timestamp: 0,
         accrued_rewards_per_share: 0,
+        end: 0,
     }
 }
 
@@ -529,14 +563,15 @@ public fun rewards<Stake>(farm: &InterestFarm<Stake>): vector<TypeName> {
 }
 
 #[test_only]
-public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u64, u256) {
-    let reward_data = farm.reward_data[&type_name::get<Reward>()];
+public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u64, u256, u64) {
+    let reward_data = farm.reward_data[&type_name::with_defining_ids<Reward>()];
 
     (
         reward_data.rewards,
         reward_data.rewards_per_second,
         reward_data.last_reward_timestamp,
         reward_data.accrued_rewards_per_share,
+        reward_data.end,
     )
 }
 
@@ -551,18 +586,13 @@ public fun precision<Stake>(farm: &InterestFarm<Stake>): u256 {
 }
 
 #[test_only]
-public fun start_timestamp<Stake>(farm: &InterestFarm<Stake>): u64 {
-    farm.start_timestamp
-}
-
-#[test_only]
 public fun paused<Stake>(farm: &InterestFarm<Stake>): bool {
     farm.paused
 }
 
 #[test_only]
 public fun balance_value<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
-    farm.balance<Stake, Reward>(type_name::get<Reward>()).value()
+    farm.balance<Stake, Reward>(type_name::with_defining_ids<Reward>()).value()
 }
 
 #[test_only]
@@ -580,12 +610,12 @@ public fun account_balance<Stake>(account: &InterestFarmAccount<Stake>): u64 {
 
 #[test_only]
 public fun account_reward_debts<Stake, Reward>(account: &InterestFarmAccount<Stake>): u256 {
-    account.reward_debts[&type_name::get<Reward>()]
+    account.reward_debts[&type_name::with_defining_ids<Reward>()]
 }
 
 #[test_only]
 public fun account_rewards<Stake, Reward>(account: &InterestFarmAccount<Stake>): u64 {
-    account.rewards[&type_name::get<Reward>()]
+    account.rewards[&type_name::with_defining_ids<Reward>()]
 }
 
 #[test_only]
