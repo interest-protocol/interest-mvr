@@ -19,6 +19,7 @@ public struct RewardBalance(TypeName) has copy, drop, store;
 public struct Decimals(u8) has copy, drop, store;
 
 public struct RewardData has copy, drop, store {
+    /// Seconds
     end: u64,
     rewards: u64,
     rewards_per_second: u64,
@@ -282,10 +283,7 @@ public fun set_end_time<Stake, Reward, Admin>(
 
     farm.update(clock);
 
-    assert!(
-        end >= clock.timestamp_ms(),
-        interest_farms::interest_farm_errors::invalid_end_timestamp!(),
-    );
+    assert!(end > clock.now(), interest_farms::interest_farm_errors::invalid_end_timestamp!());
 
     let farm_reward_data = &mut farm.reward_data[&type_name::with_defining_ids<Reward>()];
     farm_reward_data.end = end;
@@ -442,7 +440,9 @@ fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, no
     let prev_reward_time_stamp = reward_data.last_reward_timestamp;
     reward_data.last_reward_timestamp = end_time;
 
-    if (farm.total_stake_amount != 0 && prev_reward_time_stamp < end_time) {
+    if (
+        farm.total_stake_amount != 0 && prev_reward_time_stamp < end_time && reward_data.rewards_per_second != 0 && reward_data.rewards != 0
+    ) {
         let (accrued_rewards_per_share, reward) = calculate_accrued_rewards(
             reward_data.rewards_per_second,
             reward_data.accrued_rewards_per_share,
@@ -563,7 +563,7 @@ public fun rewards<Stake>(farm: &InterestFarm<Stake>): vector<TypeName> {
 }
 
 #[test_only]
-public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u64, u256, u64) {
+public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u64, u256) {
     let reward_data = farm.reward_data[&type_name::with_defining_ids<Reward>()];
 
     (
@@ -571,8 +571,13 @@ public fun reward_data<Stake, Reward>(farm: &InterestFarm<Stake>): (u64, u64, u6
         reward_data.rewards_per_second,
         reward_data.last_reward_timestamp,
         reward_data.accrued_rewards_per_share,
-        reward_data.end,
     )
+}
+
+#[test_only]
+public fun reward_end_time<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
+    let reward_data = farm.reward_data[&type_name::with_defining_ids<Reward>()];
+    reward_data.end
 }
 
 #[test_only]

@@ -1,4 +1,4 @@
-#[test_only]
+#[test_only, allow(deprecated_usage)]
 module interest_farms::ipx;
 
 use sui::coin;

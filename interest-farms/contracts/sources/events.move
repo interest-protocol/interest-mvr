@@ -130,10 +130,6 @@ public(package) fun emit_set_rewards_per_second(
     );
 }
 
-public(package) fun emit_set_end_time(
-    farm: address,
-    reward: TypeName,
-    end: u64,
-) {
+public(package) fun emit_set_end_time(farm: address, reward: TypeName, end: u64) {
     emit(InterestFarmEvent(SetEndTime { farm, reward, end }));
 }
