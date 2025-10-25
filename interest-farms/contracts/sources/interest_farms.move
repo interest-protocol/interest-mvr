@@ -119,6 +119,9 @@ public fun stake<Stake>(
         deposit_value,
         farm.total_stake_amount,
         type_name::with_defining_ids<Stake>(),
+        account.balance.value(),
+        account.reward_debts,
+        account.rewards,
     );
 }
 
@@ -145,6 +148,9 @@ public fun unstake<Stake>(
         amount,
         farm.total_stake_amount,
         type_name::with_defining_ids<Stake>(),
+        account.balance.value(),
+        account.reward_debts,
+        account.rewards,
     );
 
     unstake_coin
@@ -186,6 +192,9 @@ public fun harvest<Stake, Reward>(
         account.id.to_address(),
         reward_coin.value(),
         reward_name,
+        account.balance.value(),
+        account.reward_debts,
+        account.rewards,
     );
 
     reward_coin
@@ -457,6 +466,15 @@ fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, no
 
         if (reward_data.rewards == 0) reward_data.rewards_per_second = 0;
     };
+
+    interest_farm_events::emit_update_reward(
+        farm.id.to_address(),
+        reward_name,
+        reward_data.rewards,
+        reward_data.rewards_per_second,
+        reward_data.last_reward_timestamp,
+        reward_data.accrued_rewards_per_share,
+    );
 }
 
 fun calculate_accrued_rewards(

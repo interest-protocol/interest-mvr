@@ -1,7 +1,7 @@
 module interest_farms::interest_farm_events;
 
 use std::type_name::TypeName;
-use sui::event::emit;
+use sui::{event::emit, vec_map::VecMap};
 
 public struct InterestFarmEvent<T: copy + drop>(T) has copy, drop;
 
@@ -18,6 +18,9 @@ public struct Stake has copy, drop {
     amount: u64,
     total_stake_amount: u64,
     stake: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
 }
 
 public struct Unstake has copy, drop {
@@ -26,6 +29,9 @@ public struct Unstake has copy, drop {
     amount: u64,
     total_stake_amount: u64,
     stake: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
 }
 
 public struct Harvest has copy, drop {
@@ -33,6 +39,18 @@ public struct Harvest has copy, drop {
     account: address,
     amount: u64,
     reward: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
+}
+
+public struct UpdateReward has copy, drop {
+    farm: address,
+    reward: TypeName,
+    rewards: u64,
+    rewards_per_second: u64,
+    last_reward_timestamp: u64,
+    accrued_rewards_per_share: u256,
 }
 
 public struct AddReward has copy, drop {
@@ -80,8 +98,22 @@ public(package) fun emit_stake(
     amount: u64,
     total_stake_amount: u64,
     stake: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
 ) {
-    emit(InterestFarmEvent(Stake { farm, account, amount, total_stake_amount, stake }));
+    emit(
+        InterestFarmEvent(Stake {
+            farm,
+            account,
+            amount,
+            total_stake_amount,
+            stake,
+            account_balance,
+            reward_debts,
+            rewards,
+        }),
+    );
 }
 
 public(package) fun emit_unstake(
@@ -90,12 +122,44 @@ public(package) fun emit_unstake(
     amount: u64,
     total_stake_amount: u64,
     stake: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
 ) {
-    emit(InterestFarmEvent(Unstake { farm, account, amount, total_stake_amount, stake }));
+    emit(
+        InterestFarmEvent(Unstake {
+            farm,
+            account,
+            amount,
+            total_stake_amount,
+            stake,
+            account_balance,
+            reward_debts,
+            rewards,
+        }),
+    );
 }
 
-public(package) fun emit_harvest(farm: address, account: address, amount: u64, reward: TypeName) {
-    emit(InterestFarmEvent(Harvest { farm, account, amount, reward }));
+public(package) fun emit_harvest(
+    farm: address,
+    account: address,
+    amount: u64,
+    reward: TypeName,
+    account_balance: u64,
+    reward_debts: VecMap<TypeName, u256>,
+    rewards: VecMap<TypeName, u64>,
+) {
+    emit(
+        InterestFarmEvent(Harvest {
+            farm,
+            account,
+            amount,
+            reward,
+            account_balance,
+            reward_debts,
+            rewards,
+        }),
+    );
 }
 
 public(package) fun emit_add_reward(farm: address, reward: TypeName, amount: u64) {
@@ -132,4 +196,24 @@ public(package) fun emit_set_rewards_per_second(
 
 public(package) fun emit_set_end_time(farm: address, reward: TypeName, end: u64) {
     emit(InterestFarmEvent(SetEndTime { farm, reward, end }));
+}
+
+public(package) fun emit_update_reward(
+    farm: address,
+    reward: TypeName,
+    rewards: u64,
+    rewards_per_second: u64,
+    last_reward_timestamp: u64,
+    accrued_rewards_per_share: u256,
+) {
+    emit(
+        InterestFarmEvent(UpdateReward {
+            farm,
+            reward,
+            rewards,
+            rewards_per_second,
+            last_reward_timestamp,
+            accrued_rewards_per_share,
+        }),
+    );
 }
