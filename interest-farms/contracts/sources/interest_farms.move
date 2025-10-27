@@ -16,7 +16,7 @@ use sui::{
 
 public struct RewardBalance(TypeName) has copy, drop, store;
 
-public struct Decimals(u8) has copy, drop, store;
+public struct Decimals<phantom CoinType>(u8) has copy, drop, store;
 
 public struct RewardData has copy, drop, store {
     /// Seconds
@@ -222,18 +222,18 @@ public fun add_reward<Stake, Reward>(
 
 // === Utility Functions ===
 
-public fun coin_metadata_decimals<Stake>(coin_metadata: &CoinMetadata<Stake>): Decimals {
+public fun coin_metadata_decimals<Stake>(coin_metadata: &CoinMetadata<Stake>): Decimals<Stake> {
     Decimals(coin_metadata.get_decimals())
 }
 
-public fun currency_decimals<Stake>(currency: &Currency<Stake>): Decimals {
+public fun currency_decimals<Stake>(currency: &Currency<Stake>): Decimals<Stake> {
     Decimals(currency.decimals())
 }
 
 // === Admin Functions ===
 
 public fun request_new_farm<Stake, Admin>(
-    decimals: Decimals,
+    decimals: Decimals<Stake>,
     _: &AdminWitness<Admin>,
     ctx: &mut TxContext,
 ): NewFarmRequest<Stake> {
