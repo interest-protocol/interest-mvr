@@ -70,7 +70,7 @@ fun test_new_farm() {
         farm.assert_reward_data<IPX, SUI>(0, 0, 0, 0);
         farm.assert_reward_data<IPX, USDC>(0, 0, 0, 0);
 
-        assert_eq(interest_farm::total_stake_amount<IPX>(&farm), 0);
+        assert_eq(interest_farm::total_staked_amount<IPX>(&farm), 0);
         assert_eq(
             interest_farm::precision<IPX>(&farm),
             10u256.pow(ipx_metadata.get_decimals()) * interest_farms::interest_farm_constants::pow_10_9!(),
@@ -493,7 +493,7 @@ fun test_stake() {
         let mut account1 = farm.new_account<IPX>(scenario.ctx());
         let mut account2 = farm.new_account<IPX>(scenario.ctx());
 
-        assert_eq(farm.total_stake_amount<IPX>(), 0);
+        assert_eq(farm.total_staked_amount<IPX>(), 0);
 
         account1.stake<IPX>(
             farm,
@@ -502,7 +502,7 @@ fun test_stake() {
             scenario.ctx(),
         );
 
-        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(farm.total_staked_amount<IPX>(), 10 * POW_10_9);
         assert_eq(account1.account_balance(), 10 * POW_10_9);
         assert_eq(account1.account_reward_debts<IPX, SUI>(), 0);
         assert_eq(account1.account_reward_debts<IPX, USDC>(), 0);
@@ -621,7 +621,7 @@ fun test_unstake() {
         let mut account1 = farm.new_account<IPX>(scenario.ctx());
         let mut account2 = farm.new_account<IPX>(scenario.ctx());
 
-        assert_eq(farm.total_stake_amount<IPX>(), 0);
+        assert_eq(farm.total_staked_amount<IPX>(), 0);
 
         account1.stake<IPX>(
             farm,
@@ -748,7 +748,7 @@ fun test_harvest() {
             scenario.ctx(),
         );
 
-        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(farm.total_staked_amount<IPX>(), 10 * POW_10_9);
         assert_eq(account1.account_balance(), 10 * POW_10_9);
         assert_eq(account1.account_reward_debts<IPX, SUI>(), 0);
         assert_eq(account1.account_reward_debts<IPX, USDC>(), 0);
@@ -778,7 +778,7 @@ fun test_harvest() {
         let sui_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, SUI>();
         let usdc_accrued_rewards_per_share2 = farm.accrued_rewards_per_share<IPX, USDC>();
 
-        assert_eq(farm.total_stake_amount<IPX>(), 10 * POW_10_9);
+        assert_eq(farm.total_staked_amount<IPX>(), 10 * POW_10_9);
         assert_eq(account1.account_balance(), 10 * POW_10_9);
         assert_eq(
             account1.account_reward_debts<IPX, SUI>(),

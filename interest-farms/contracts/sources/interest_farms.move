@@ -43,7 +43,7 @@ public struct InterestFarm<phantom Stake> has key, store {
     id: UID,
     rewards: vector<TypeName>,
     reward_data: VecMap<TypeName, RewardData>,
-    total_stake_amount: u64,
+    total_staked_amount: u64,
     precision: u256,
     paused: bool,
     admin_type: TypeName,
@@ -111,13 +111,13 @@ public fun stake<Stake>(
 
     account.update_reward_debt(farm);
 
-    farm.total_stake_amount = farm.total_stake_amount + deposit_value;
+    farm.total_staked_amount = farm.total_staked_amount + deposit_value;
 
     interest_farm_events::emit_stake(
         farm.id.to_address(),
         account.id.to_address(),
         deposit_value,
-        farm.total_stake_amount,
+        farm.total_staked_amount,
         type_name::with_defining_ids<Stake>(),
         account.balance.value(),
         account.reward_debts,
@@ -140,13 +140,13 @@ public fun unstake<Stake>(
 
     account.update_reward_debt(farm);
 
-    farm.total_stake_amount = farm.total_stake_amount - amount;
+    farm.total_staked_amount = farm.total_staked_amount - amount;
 
     interest_farm_events::emit_unstake(
         farm.id.to_address(),
         account.id.to_address(),
         amount,
-        farm.total_stake_amount,
+        farm.total_staked_amount,
         type_name::with_defining_ids<Stake>(),
         account.balance.value(),
         account.reward_debts,
@@ -241,7 +241,7 @@ public fun request_new_farm<Stake, Admin>(
         id: object::new(ctx),
         rewards: vector[],
         reward_data: vec_map::empty(),
-        total_stake_amount: 0,
+        total_staked_amount: 0,
         precision: 10u256.pow(decimals.0) * interest_farms::interest_farm_constants::pow_10_9!(),
         paused: false,
         admin_type: type_name::with_defining_ids<Admin>(),
@@ -375,14 +375,14 @@ fun pending_rewards<Stake, Reward>(
     let rewards_available = farm.balance<_, Reward>(reward_name).value();
 
     let accrued_rewards_per_share = if (
-        farm.total_stake_amount == 0 || reward_data.last_reward_timestamp >= end_time
+        farm.total_staked_amount == 0 || reward_data.last_reward_timestamp >= end_time
     ) {
         reward_data.accrued_rewards_per_share
     } else {
         let (accrued_rewards_per_share, _) = calculate_accrued_rewards(
             reward_data.rewards_per_second,
             reward_data.accrued_rewards_per_share,
-            farm.total_stake_amount,
+            farm.total_staked_amount,
             reward_data.rewards,
             farm.precision,
             end_time - reward_data.last_reward_timestamp,
@@ -450,12 +450,12 @@ fun update_impl<Stake>(farm: &mut InterestFarm<Stake>, reward_name: TypeName, no
     reward_data.last_reward_timestamp = end_time;
 
     if (
-        farm.total_stake_amount != 0 && prev_reward_time_stamp < end_time && reward_data.rewards_per_second != 0 && reward_data.rewards != 0
+        farm.total_staked_amount != 0 && prev_reward_time_stamp < end_time && reward_data.rewards_per_second != 0 && reward_data.rewards != 0
     ) {
         let (accrued_rewards_per_share, reward) = calculate_accrued_rewards(
             reward_data.rewards_per_second,
             reward_data.accrued_rewards_per_share,
-            farm.total_stake_amount,
+            farm.total_staked_amount,
             reward_data.rewards,
             farm.precision,
             end_time - prev_reward_time_stamp,
@@ -599,8 +599,8 @@ public fun reward_end_time<Stake, Reward>(farm: &InterestFarm<Stake>): u64 {
 }
 
 #[test_only]
-public fun total_stake_amount<Stake>(farm: &InterestFarm<Stake>): u64 {
-    farm.total_stake_amount
+public fun total_staked_amount<Stake>(farm: &InterestFarm<Stake>): u64 {
+    farm.total_staked_amount
 }
 
 #[test_only]
